@@ -1,0 +1,11 @@
+# Deny everything.
+**
+
+!/LICENSE
+!/src
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/.eslintrc.cjs
+!/.prettierignore
+!/gtfs-realtime.proto
