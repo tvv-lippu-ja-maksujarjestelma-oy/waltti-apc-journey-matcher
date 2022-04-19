@@ -47,7 +47,8 @@
     "typescript": "^4.5.5"
   },
   "dependencies": {
-    "pino": "^7.6.5"
+    "pino": "^7.6.5",
+    "pulsar-client": "https://github.com/apache/pulsar-client-node/tarball/40ac35e7668ef0a3dc7aa62fc670838f5871b543"
   },
   "jest": {
     "preset": "ts-jest",
