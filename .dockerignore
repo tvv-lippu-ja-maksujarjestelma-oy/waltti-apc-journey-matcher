@@ -1,11 +1,14 @@
 # Deny everything.
 **
 
+# Allow these.
 !/LICENSE
+!/protobuf
+!/quicktype
 !/src
 !/package.json
 !/package-lock.json
 !/tsconfig.json
 !/.eslintrc.cjs
+!/.eslintignore
 !/.prettierignore
-!/gtfs-realtime.proto

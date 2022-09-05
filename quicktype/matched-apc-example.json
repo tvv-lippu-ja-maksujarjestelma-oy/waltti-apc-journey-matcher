@@ -1,0 +1,33 @@
+{
+  "feedPublisherId": "fi:kuopio",
+  "tripId": "Talvikausi_Ma-Pe_3_0_074500_075400_0",
+  "startDate": "2022-03-10",
+  "startTime": "07:45:00",
+  "routeId": "3",
+  "directionId": 0,
+  "countingVendorName": "Fake Vendor",
+  "timezoneName": "Europe/Helsinki",
+  "stopId": "201827",
+  "stopSequence": 1,
+  "countQuality": "regular",
+  "doorClassCounts": [
+    {
+      "doorName": "door1",
+      "countClass": "adult",
+      "in": 7,
+      "out": 0
+    },
+    {
+      "doorName": "door1",
+      "countClass": "pram",
+      "in": 1,
+      "out": 0
+    },
+    {
+      "doorName": "door2",
+      "countClass": "child",
+      "in": 0,
+      "out": 3
+    }
+  ]
+}

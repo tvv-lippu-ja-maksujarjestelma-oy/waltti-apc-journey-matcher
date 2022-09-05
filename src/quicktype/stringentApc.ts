@@ -1,13 +1,9 @@
-/**
- * Generated manually with https://app.quicktype.io/ on 2022-04-21 using
- * https://github.com/tvv-lippu-ja-maksujarjestelma-oy/waltti-apc-pilot-spec/blob/a5d2af5c1c92018540e4fc7bf39912d3ce6bd018/apc-from-vehicle.schema.json
- */
-
+// @ts-nocheck
 // To parse this data:
 //
-//   import { Convert, ApcMessage } from "./file";
+//   import { Convert, StringentApcMessage } from "./file";
 //
-//   const apcMessage = Convert.toApcMessage(json);
+//   const stringentApcMessage = Convert.toStringentApcMessage(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
@@ -17,7 +13,7 @@
  * centralized server. Inspired by the Helsinki Regional Transport Authority (HSL) APC
  * interface and the ITxPT APC specification.
  */
-export interface ApcMessage {
+export interface StringentApcMessage {
   /**
    * A wrapper object for the APC message
    */
@@ -33,17 +29,17 @@ export interface Apc {
    * sensor systems from different vendors in different vehicles. E.g.
    * 'vendor1-client2-apc-device3' or possibly a UUIDv4 string. Needs to be universally unique.
    */
-  countingSystemId?: string;
+  countingSystemId: string;
   /**
    * UUIDv4 for each unique message
    */
-  messageId?: string;
+  messageId: string;
   /**
    * The SchemaVer version number of this JSON schema that this message follows. It must match
    * a published SchemaVer version number from the '$id' key of this JSON schema. A valid
    * value is for example '1-0-0' or '1-1-0'.
    */
-  schemaVersion?: string;
+  schemaVersion: string;
   /**
    * A timestamp for when the data was generated. An ISO 8601 UTC timestamp in the strftime
    * format '%Y-%m-%dT%H:%M:%S.%fZ' where '%f' means milliseconds zero-padded on the left. A
@@ -55,7 +51,7 @@ export interface Apc {
    * A JSON version of combining ITxPT PassengerDoorCount with PassengerVehicleCount. The
    * format originates from HSL.
    */
-  vehiclecounts?: Vehiclecounts;
+  vehiclecounts: Vehiclecounts;
 }
 
 /**
@@ -66,15 +62,11 @@ export interface Vehiclecounts {
   /**
    * Information on the quality of counting
    */
-  countquality?: Countquality;
+  countquality: Countquality;
   /**
    * JSON version of ITxPT PassengerDoorCount
    */
-  doorcounts?: Doorcount[];
-  /**
-   * Number of passengers on-board. Matches ITxPT VehicleOccupancy.
-   */
-  vehicleload?: number;
+  doorcounts: Doorcount[];
 }
 
 /**
@@ -102,7 +94,7 @@ export interface Count {
   /**
    * Information on the passenger type
    */
-  class?: Class;
+  class: Class;
   /**
    * Number of passengers having boarded
    */
@@ -128,12 +120,44 @@ export enum Class {
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
-  public static toApcMessage(json: string): ApcMessage {
-    return cast(JSON.parse(json), r("ApcMessage"));
+  public static toStringentApcMessage(json: string): StringentApcMessage {
+    return cast(JSON.parse(json), r("StringentApcMessage"));
   }
 
-  public static apcMessageToJson(value: ApcMessage): string {
-    return JSON.stringify(uncast(value, r("ApcMessage")), null, 2);
+  public static stringentApcMessageToJson(value: StringentApcMessage): string {
+    return JSON.stringify(uncast(value, r("StringentApcMessage")), null, 2);
+  }
+
+  public static toApc(json: string): Apc {
+    return cast(JSON.parse(json), r("Apc"));
+  }
+
+  public static apcToJson(value: Apc): string {
+    return JSON.stringify(uncast(value, r("Apc")), null, 2);
+  }
+
+  public static toVehiclecounts(json: string): Vehiclecounts {
+    return cast(JSON.parse(json), r("Vehiclecounts"));
+  }
+
+  public static vehiclecountsToJson(value: Vehiclecounts): string {
+    return JSON.stringify(uncast(value, r("Vehiclecounts")), null, 2);
+  }
+
+  public static toDoorcount(json: string): Doorcount {
+    return cast(JSON.parse(json), r("Doorcount"));
+  }
+
+  public static doorcountToJson(value: Doorcount): string {
+    return JSON.stringify(uncast(value, r("Doorcount")), null, 2);
+  }
+
+  public static toCount(json: string): Count {
+    return cast(JSON.parse(json), r("Count"));
+  }
+
+  public static countToJson(value: Count): string {
+    return JSON.stringify(uncast(value, r("Count")), null, 2);
   }
 }
 
@@ -276,7 +300,6 @@ function o(props: any[], additional: any) {
   return { props, additional };
 }
 
-// @ts-ignore
 function m(additional: any) {
   return { props: [], additional };
 }
@@ -286,38 +309,21 @@ function r(name: string) {
 }
 
 const typeMap: any = {
-  ApcMessage: o([{ json: "APC", js: "APC", typ: r("Apc") }], false),
+  StringentApcMessage: o([{ json: "APC", js: "APC", typ: r("Apc") }], false),
   Apc: o(
     [
-      {
-        json: "countingSystemId",
-        js: "countingSystemId",
-        typ: u(undefined, ""),
-      },
-      { json: "messageId", js: "messageId", typ: u(undefined, "") },
-      { json: "schemaVersion", js: "schemaVersion", typ: u(undefined, "") },
+      { json: "countingSystemId", js: "countingSystemId", typ: "" },
+      { json: "messageId", js: "messageId", typ: "" },
+      { json: "schemaVersion", js: "schemaVersion", typ: "" },
       { json: "tst", js: "tst", typ: Date },
-      {
-        json: "vehiclecounts",
-        js: "vehiclecounts",
-        typ: u(undefined, r("Vehiclecounts")),
-      },
+      { json: "vehiclecounts", js: "vehiclecounts", typ: r("Vehiclecounts") },
     ],
     "any"
   ),
   Vehiclecounts: o(
     [
-      {
-        json: "countquality",
-        js: "countquality",
-        typ: u(undefined, r("Countquality")),
-      },
-      {
-        json: "doorcounts",
-        js: "doorcounts",
-        typ: u(undefined, a(r("Doorcount"))),
-      },
-      { json: "vehicleload", js: "vehicleload", typ: u(undefined, 0) },
+      { json: "countquality", js: "countquality", typ: r("Countquality") },
+      { json: "doorcounts", js: "doorcounts", typ: a(r("Doorcount")) },
     ],
     "any"
   ),
@@ -330,7 +336,7 @@ const typeMap: any = {
   ),
   Count: o(
     [
-      { json: "class", js: "class", typ: u(undefined, r("Class")) },
+      { json: "class", js: "class", typ: r("Class") },
       { json: "in", js: "in", typ: 0 },
       { json: "out", js: "out", typ: 0 },
     ],

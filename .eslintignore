@@ -1,2 +1,3 @@
-src/apc.ts
-src/gtfsRealtime.d.ts
+dist
+src/protobuf
+src/quicktype
