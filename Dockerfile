@@ -3,8 +3,8 @@ FROM node:16-bullseye-slim AS base
 ARG PULSAR_VERSION
 # The fingerprint for the GPG key can be found from
 # https://downloads.apache.org/pulsar/KEYS
-# and can be verified by using a search engine to find other usees for it.
-ARG PULSAR_GPG_FINGERPRINT=21D60930CE32C858F903BB2CBC33A6A32F90D558
+# and can be verified by using a search engine to find other uses for it.
+ARG PULSAR_GPG_FINGERPRINT=C6027CC38D525CEAF0256A74772D77990D717CBC
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
