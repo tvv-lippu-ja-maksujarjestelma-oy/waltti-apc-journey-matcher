@@ -1,10 +1,25 @@
 import type pino from "pino";
 import Pulsar from "pulsar-client";
+import type { MatchedApc } from "./quicktype/matchedApc";
+import type { Apc } from "./quicktype/stringentApc";
 
-export interface MapperConfig {
-  feedPublisherId: string;
-  timezoneName: string;
-  countingSystemToVehicleMap: Map<string, string>;
+export type UniqueVehicleId = string;
+
+export type CountingSystemMap = Map<
+  NonNullable<Apc["countingSystemId"]>,
+  [UniqueVehicleId, MatchedApc["countingVendorName"]]
+>;
+
+export type FeedPublisherId = string;
+
+export type TimezoneName = string;
+
+export type FeedMap = Map<string, [FeedPublisherId, TimezoneName]>;
+
+export interface ProcessingConfig {
+  apcWaitInSeconds: number;
+  countingSystemMap: CountingSystemMap;
+  feedMap: FeedMap;
 }
 
 export interface PulsarOauth2Config {
@@ -31,7 +46,7 @@ export interface HealthCheckConfig {
 }
 
 export interface Config {
-  mapper: MapperConfig;
+  processing: ProcessingConfig;
   pulsar: PulsarConfig;
   healthCheck: HealthCheckConfig;
 }
@@ -61,39 +76,65 @@ const getOptionalBooleanWithDefault = (
   return result;
 };
 
-const getCountingSystemToVehicleMap = (): Map<string, string> => {
-  const envVariable = "COUNTING_SYSTEM_TO_VEHICLE_MAP";
-  // FIXME: check that each key and each value is unique
-  const map = new Map<string, string>(
-    // Check the contents below. Crashing here is fine, too.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    JSON.parse(getRequired(envVariable))
-  );
+const getOptionalFiniteFloatWithDefault = (
+  envVariable: string,
+  defaultValue: number
+) => {
+  let result = defaultValue;
+  const str = getOptional(envVariable);
+  if (str !== undefined) {
+    result = Number.parseFloat(str);
+    if (!Number.isFinite(result)) {
+      throw new Error(`${envVariable} must be a finite float`);
+    }
+  }
+  return result;
+};
+
+const getStringPairMap = (
+  envVariable: string
+): Map<string, [string, string]> => {
+  // Check the contents below. Crashing here is fine, too.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const keyValueList = JSON.parse(getRequired(envVariable));
+  if (!Array.isArray(keyValueList)) {
+    throw new Error(`${envVariable} must be a an array`);
+  }
+  const map = new Map<string, [string, string]>(keyValueList);
   if (map.size < 1) {
     throw new Error(
-      `${envVariable} must have at least one entries() pair in the form of stringified JSON array of arrays.`
+      `${envVariable} must have at least one array entry in the form of [string, [string, string]].`
     );
   }
+  if (map.size !== keyValueList.length) {
+    throw new Error(`${envVariable} must have each key only once.`);
+  }
   if (
+    Array.from(map.values()).some(
+      (pair) => !Array.isArray(pair) || pair.length !== 2
+    ) ||
     Array.from(map.entries())
-      .flat()
+      .flat(2)
       .some((x) => typeof x !== "string")
   ) {
     throw new Error(
-      `${envVariable} must contain only pairs of strings in the form of stringified JSON array of arrays.`
+      `${envVariable} must contain only strings in the form of [string, [string, string]].`
     );
   }
   return map;
 };
 
-const getMapperConfig = () => {
-  const feedPublisherId = getRequired("FEED_PUBLISHER_ID");
-  const timezoneName = getRequired("TIMEZONE_NAME");
-  const countingSystemToVehicleMap = getCountingSystemToVehicleMap();
+const getProcessingConfig = () => {
+  const apcWaitInSeconds = getOptionalFiniteFloatWithDefault(
+    "APC_WAIT_IN_SECONDS",
+    6
+  );
+  const countingSystemMap = getStringPairMap("COUNTING_SYSTEM_MAP");
+  const feedMap = getStringPairMap("FEED_MAP");
   return {
-    feedPublisherId,
-    timezoneName,
-    countingSystemToVehicleMap,
+    apcWaitInSeconds,
+    countingSystemMap,
+    feedMap,
   };
 };
 
@@ -210,7 +251,7 @@ const getHealthCheckConfig = () => {
 };
 
 export const getConfig = (logger: pino.Logger): Config => ({
-  mapper: getMapperConfig(),
+  processing: getProcessingConfig(),
   pulsar: getPulsarConfig(logger),
   healthCheck: getHealthCheckConfig(),
 });
