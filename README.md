@@ -42,8 +42,8 @@ This repository has been created as part of the [Waltti APC](https://github.com/
 
 ## Docker
 
-You can use the Docker image `ghcr.io/tvv-lippu-ja-maksujarjestelma-oy/waltti-apc-journey-matcher:edge`.
-Check out [the available tags](https://github.com/tvv-lippu-ja-maksujarjestelma-oy/waltti-apc-journey-matcher/pkgs/container/waltti-apc-journey-matcher).
+You can use the Docker image `tvvlmj/waltti-apc-journey-matcher:edge`.
+Check out [the available tags](https://hub.docker.com/r/tvvlmj/waltti-apc-journey-matcher/tags).
 
 ## Configuration
 
