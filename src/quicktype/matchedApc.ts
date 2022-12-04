@@ -15,7 +15,7 @@ export interface MatchedApc {
   doorClassCounts: DoorClassCount[];
   feedPublisherId: string;
   routeId: string;
-  startDate: Date;
+  startDate: string;
   startTime: string;
   stopId: string;
   stopSequence: number;
@@ -210,7 +210,7 @@ const typeMap: any = {
       },
       { json: "feedPublisherId", js: "feedPublisherId", typ: "" },
       { json: "routeId", js: "routeId", typ: "" },
-      { json: "startDate", js: "startDate", typ: Date },
+      { json: "startDate", js: "startDate", typ: "" },
       { json: "startTime", js: "startTime", typ: "" },
       { json: "stopId", js: "stopId", typ: "" },
       { json: "stopSequence", js: "stopSequence", typ: 0 },

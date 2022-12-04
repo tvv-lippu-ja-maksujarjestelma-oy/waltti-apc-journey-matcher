@@ -7,7 +7,7 @@ export interface VehicleJourney {
   directionId: number;
   feedPublisherId: string;
   routeId: string;
-  startDate: Date;
+  startDate: string;
   startTime: string;
   stopId: string;
   stopSequence: number;
@@ -17,18 +17,15 @@ export interface VehicleJourney {
 
 type VehicleJourneyCache = Map<VehicleJourneyKey, VehicleJourney>;
 
-const parseDate = (dateString: string | null | undefined): Date | undefined => {
+export const hyphenateDate = (
+  dateString: string | null | undefined
+): string | undefined => {
   let result;
   if (dateString != null && dateString.length === 8) {
-    const timestamp = Date.parse(
-      `${dateString.slice(0, 4)}-${dateString.slice(4, 6)}-${dateString.slice(
-        6,
-        8
-      )}T12:00:00.000Z`
-    );
-    if (!Number.isNaN(timestamp)) {
-      result = new Date(timestamp);
-    }
+    result = `${dateString.slice(0, 4)}-${dateString.slice(
+      4,
+      6
+    )}-${dateString.slice(6, 8)}`;
   }
   return result;
 };
@@ -45,7 +42,7 @@ export const formVehicleJourney = (
   const trip = vehicle?.trip;
   const directionId = trip?.directionId;
   const routeId = trip?.routeId;
-  const startDate = parseDate(trip?.startDate);
+  const startDate = hyphenateDate(trip?.startDate);
   const startTime = trip?.startTime;
   const stopId = vehicle?.stopId;
   const stopSequence = vehicle?.currentStopSequence;

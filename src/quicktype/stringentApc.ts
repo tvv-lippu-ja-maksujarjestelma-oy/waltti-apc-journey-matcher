@@ -46,7 +46,7 @@ export interface Apc {
    * valid value would be e.g. '2021-11-22T10:57:08.647Z'. Use 24-hour linear smear from noon
    * to noon UTC for leap seconds, like Google: https://developers.google.com/time/smear .
    */
-  tst: Date;
+  tst: string;
   /**
    * A JSON version of combining ITxPT PassengerDoorCount with PassengerVehicleCount. The
    * format originates from HSL.
@@ -315,7 +315,7 @@ const typeMap: any = {
       { json: "countingSystemId", js: "countingSystemId", typ: "" },
       { json: "messageId", js: "messageId", typ: "" },
       { json: "schemaVersion", js: "schemaVersion", typ: "" },
-      { json: "tst", js: "tst", typ: Date },
+      { json: "tst", js: "tst", typ: "" },
       { json: "vehiclecounts", js: "vehiclecounts", typ: r("Vehiclecounts") },
     ],
     "any"
