@@ -1,7 +1,7 @@
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import type { ProcessingConfig } from "./config";
-import initializeMatching from "./matching";
+import { initializeMatching } from "./matching";
 
 const keepReactingToGtfsrt = async (
   producer: Pulsar.Producer,

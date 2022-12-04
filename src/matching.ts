@@ -1,7 +1,12 @@
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import { ApcCacheValue, createApcCache } from "./apcCache";
-import type { FeedMap, ProcessingConfig } from "./config";
+import type {
+  CountingSystemMap,
+  FeedMap,
+  ProcessingConfig,
+  UniqueVehicleId,
+} from "./config";
 import { transit_realtime } from "./protobuf/gtfsRealtime";
 import * as stringentApc from "./quicktype/stringentApc";
 import * as matchedApc from "./quicktype/matchedApc";
@@ -12,7 +17,14 @@ import {
 } from "./vehicleJourneyCache";
 import createTimerMap from "./timerMap";
 
-const getFeedDetails = (
+export const extractVehiclesFromCountingSystemMap = (
+  countingSystemMap: CountingSystemMap
+): UniqueVehicleId[] =>
+  Array.from(countingSystemMap.values()).map(
+    ([uniqueVehicleId]) => uniqueVehicleId
+  );
+
+export const getFeedDetails = (
   feedMap: FeedMap,
   topic: string
 ): { feedPublisherId: string; timezoneName: string } | undefined => {
@@ -27,7 +39,7 @@ const getFeedDetails = (
   return result;
 };
 
-const getUniqueVehicleId = (
+export const getUniqueVehicleId = (
   entity: transit_realtime.IFeedEntity,
   feedPublisherId: string
 ): string | undefined => {
@@ -83,16 +95,15 @@ const formMatchedApcMessage = (
   };
 };
 
-const initializeMatching = (
+export const initializeMatching = (
   logger: pino.Logger,
   { apcWaitInSeconds, countingSystemMap, feedMap }: ProcessingConfig
 ) => {
   const apcCache = createApcCache();
   const vehicleJourneyCache = createVehicleJourneyCache();
   const resetTimer = createTimerMap(apcWaitInSeconds);
-  const includedVehicles = Array.from(countingSystemMap.values()).map(
-    ([uniqueVehicleId]) => uniqueVehicleId
-  );
+  const includedVehicles =
+    extractVehiclesFromCountingSystemMap(countingSystemMap);
 
   const updateApcCache = (apcPulsarMessage: Pulsar.Message): void => {
     const dataString = apcPulsarMessage.getData().toString("utf8");
@@ -217,5 +228,3 @@ const initializeMatching = (
 
   return { updateApcCache, expandWithApcAndSend };
 };
-
-export default initializeMatching;
