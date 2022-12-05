@@ -141,7 +141,7 @@ export const initializeMatching = (
 
   const expandWithApcAndSend = (
     gtfsrtPulsarMessage: Pulsar.Message,
-    sendCallback: (fullApcMessage: Pulsar.ProducerMessage | undefined) => void
+    sendCallback: (fullApcMessage: Pulsar.ProducerMessage) => void
   ): void => {
     let gtfsrtMessage;
     try {
@@ -153,7 +153,6 @@ export const initializeMatching = (
         { err },
         "The GTFS Realtime message does not conform to the proto definition"
       );
-      sendCallback(undefined);
       return;
     }
     const pulsarTopic = gtfsrtPulsarMessage.getTopicName();
@@ -163,7 +162,6 @@ export const initializeMatching = (
         { pulsarTopic, gtfsrtMessage: JSON.stringify(gtfsrtMessage) },
         "Could not get feed details from the Pulsar topic name"
       );
-      sendCallback(undefined);
       return;
     }
     gtfsrtMessage.entity.forEach((entity) => {
@@ -176,7 +174,6 @@ export const initializeMatching = (
           { feedDetails, feedEntity: JSON.stringify(entity) },
           "Could not form uniqueVehicleId from the feed entity"
         );
-        sendCallback(undefined);
         return;
       }
       if (includedVehicles.includes(uniqueVehicleId)) {
@@ -186,7 +183,6 @@ export const initializeMatching = (
             { feedEntity: JSON.stringify(entity) },
             "The feed entity could not be turned into vehicle journey"
           );
-          sendCallback(undefined);
           return;
         }
         const cachedVehicleJourney = vehicleJourneyCache.get(uniqueVehicleId);
@@ -199,7 +195,6 @@ export const initializeMatching = (
               { feedEntity: JSON.stringify(entity) },
               "The feed entity has no currentStopSequence"
             );
-            sendCallback(undefined);
             return;
           }
           if (
@@ -214,6 +209,7 @@ export const initializeMatching = (
                   apcCacheItem
                 );
                 sendCallback(matchedApcMessage);
+                // The sent message might not have been acked yet by the cluster.
                 apcCache.remove(uniqueVehicleId);
               }
             });
