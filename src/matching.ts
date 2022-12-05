@@ -19,9 +19,11 @@ import createTimerMap from "./timerMap";
 
 export const extractVehiclesFromCountingSystemMap = (
   countingSystemMap: CountingSystemMap
-): UniqueVehicleId[] =>
-  Array.from(countingSystemMap.values()).map(
-    ([uniqueVehicleId]) => uniqueVehicleId
+): Set<UniqueVehicleId> =>
+  new Set(
+    Array.from(countingSystemMap.values()).map(
+      ([uniqueVehicleId]) => uniqueVehicleId
+    )
   );
 
 export const getFeedDetails = (
@@ -175,7 +177,7 @@ export const initializeMatching = (
         );
         return;
       }
-      if (includedVehicles.includes(uniqueVehicleId)) {
+      if (includedVehicles.has(uniqueVehicleId)) {
         const vehicleJourney = formVehicleJourney(entity, feedDetails);
         if (vehicleJourney === undefined) {
           logger.warn(
