@@ -136,11 +136,19 @@ const mockMatchedApcPulsarProducerMessage = ({
   eventTimestamp,
 });
 
-test("initializeMatching", () => {
+const decodeMatchedApcPulsarProducerMessage = (
+  message: Pulsar.ProducerMessage
+) => matchedApc.Convert.toMatchedApc(message.data.toString("utf8"));
+
+// eslint-disable-next-line jest/no-done-callback
+test("match with results of initializeMatching", (done) => {
   const logger = pino({
     name: "tester",
     timestamp: pino.stdTimeFunctions.isoTime,
   });
+  jest.useFakeTimers();
+  jest.spyOn(global, "setTimeout");
+
   const config: ProcessingConfig = {
     apcWaitInSeconds: 6,
     countingSystemMap: new Map([
@@ -219,13 +227,13 @@ test("initializeMatching", () => {
     },
     eventTimestamp: 1667413927456,
   });
-  const gtfsrtMessage = mockGtfsrtMessage({
+  const gtfsrtMessageBeforeStop = mockGtfsrtMessage({
     topic: "persistent://tenant/namespace/gtfs-realtime-vp-fi-kuopio",
     content: {
       header: {
         gtfsRealtimeVersion: "2.0",
         incrementality: transit_realtime.FeedHeader.Incrementality.FULL_DATASET,
-        timestamp: 1667413936,
+        timestamp: 1667406730,
       },
       entity: [
         {
@@ -267,15 +275,67 @@ test("initializeMatching", () => {
     },
     eventTimestamp: 1667413937123,
   });
+  const gtfsrtMessageAfterStop = mockGtfsrtMessage({
+    topic: "persistent://tenant/namespace/gtfs-realtime-vp-fi-kuopio",
+    content: {
+      header: {
+        gtfsRealtimeVersion: "2.0",
+        incrementality: transit_realtime.FeedHeader.Incrementality.FULL_DATASET,
+        timestamp: 1667406732,
+      },
+      entity: [
+        {
+          id: "44517_160",
+          vehicle: {
+            trip: {
+              tripId: "Talvikausi_Koulp_4_0_180300_183700_1",
+              startTime: "18:03:00",
+              startDate: "20221102",
+              scheduleRelationship:
+                transit_realtime.TripDescriptor.ScheduleRelationship.SCHEDULED,
+              routeId: "4",
+              directionId: 0,
+            },
+            position: {
+              latitude: 62.8861765,
+              longitude: 27.6283261,
+              bearing: 271,
+              speed: 8.62222233,
+            },
+            currentStopSequence: 24,
+            currentStatus:
+              transit_realtime.VehiclePosition.VehicleStopStatus.IN_TRANSIT_TO,
+            timestamp: 1667406732,
+            congestionLevel:
+              transit_realtime.VehiclePosition.CongestionLevel
+                .UNKNOWN_CONGESTION_LEVEL,
+            // Fake stopId
+            stopId: "123456",
+            vehicle: {
+              id: "44517_160",
+              // Real example. Encoding is not UTF-8.
+              label: "NeulamÃ¤ki",
+              licensePlate: "JLJ-160",
+            },
+          },
+        },
+      ],
+    },
+    eventTimestamp: 1667413939023,
+  });
   const expectedApcMessage = mockMatchedApcPulsarProducerMessage({
     content: {
       countQuality: "regular",
       countingVendorName: "Vendor1",
       directionId: 0,
-      doorClassCounts: [{ countClass: "adult", doorName: "1", in: 2, out: 0 }],
+      doorClassCounts: [
+        { countClass: "adult", doorName: "1", in: 2, out: 0 },
+        { countClass: "adult", doorName: "2", in: 0, out: 0 },
+        { countClass: "adult", doorName: "3", in: 0, out: 0 },
+      ],
       feedPublisherId: "fi:kuopio",
       routeId: "4",
-      startDate: "20221102",
+      startDate: "2022-11-02",
       startTime: "18:03:00",
       stopId: "201548",
       stopSequence: 23,
@@ -284,13 +344,30 @@ test("initializeMatching", () => {
     },
     eventTimestamp: 1667413927456,
   });
+  const callback1 = jest.fn();
+  const callback2 = (matchedApcMessage: Pulsar.ProducerMessage) => {
+    try {
+      const received = decodeMatchedApcPulsarProducerMessage(matchedApcMessage);
+      const expected =
+        decodeMatchedApcPulsarProducerMessage(expectedApcMessage);
+      expect(received).toStrictEqual(expected);
+      done();
+    } catch (error) {
+      done(error);
+    }
+  };
+  const spy = jest.spyOn({ f: callback2 }, "f");
   const { updateApcCache, expandWithApcAndSend } = initializeMatching(
     logger,
     config
   );
+
   updateApcCache(apcMessage1);
   updateApcCache(apcMessage2);
-  expandWithApcAndSend(gtfsrtMessage, (matchedApcMessage) => {
-    expect(matchedApcMessage).toStrictEqual(expectedApcMessage);
-  });
+  expandWithApcAndSend(gtfsrtMessageBeforeStop, callback1);
+  expandWithApcAndSend(gtfsrtMessageAfterStop, callback2);
+
+  expect(spy).not.toHaveBeenCalled();
+  jest.runAllTimers();
+  expect(callback1).not.toHaveBeenCalled();
 });
