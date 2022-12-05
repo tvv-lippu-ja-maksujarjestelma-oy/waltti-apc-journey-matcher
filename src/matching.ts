@@ -188,6 +188,9 @@ export const initializeMatching = (
         }
         const cachedVehicleJourney = vehicleJourneyCache.get(uniqueVehicleId);
         if (cachedVehicleJourney === undefined) {
+          // The very first message should not trigger sending as we are waiting
+          // for the moment of stopSequence change to trigger sending and that
+          // cannot be determined without another message to compare to.
           vehicleJourneyCache.set(uniqueVehicleId, vehicleJourney);
         } else {
           const currentStopSequence = entity.vehicle?.currentStopSequence;
