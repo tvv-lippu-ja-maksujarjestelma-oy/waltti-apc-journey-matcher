@@ -112,6 +112,8 @@ const exitGracefully = async (
     const logger = pino({
       name: serviceName,
       timestamp: pino.stdTimeFunctions.isoTime,
+      // As logger is started before config is created, read the level from env.
+      level: process.env["PINO_LOG_LEVEL"] ?? "info",
     });
 
     let setHealthOk: (isOk: boolean) => void;
