@@ -14,8 +14,9 @@ test("Extracting vehicles from a valid counting system map succeeds", () => {
   const countingSystemMap: CountingSystemMap = new Map([
     ["CountingSystemFoo", ["VehicleBar", "VendorBaz"]],
     ["CountingSystem2", ["Vehicle2", "Vendor2"]],
+    ["CountingSystem3", ["VehicleBar", "Vendor2"]],
   ]);
-  const uniqueVehicleIds = ["VehicleBar", "Vehicle2"];
+  const uniqueVehicleIds = new Set(["VehicleBar", "Vehicle2"]);
   expect(extractVehiclesFromCountingSystemMap(countingSystemMap)).toStrictEqual(
     uniqueVehicleIds
   );
