@@ -1,5 +1,12 @@
 import type { UniqueVehicleId } from "./config";
 
+/**
+ * Create a Map of timeoutIds.
+ *
+ * Setting a callback for a key cancels any previous callbacks for that key.
+ * Each callback is triggered after a constant time from the setting of the
+ * callback into the Map.
+ */
 const createTimerMap = (
   waitInSeconds: number
 ): ((key: UniqueVehicleId, callback: () => void) => void) => {
@@ -10,9 +17,8 @@ const createTimerMap = (
     const timeoutId = map.get(key);
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
-      // This is not strictly necessary as we should overwrite it next
-      // but let's delete the old timeoutId just in case we make a
-      // mistake elsewhere.
+      // This is not strictly necessary as we should overwrite it next but let's
+      // delete the old timeoutId just in case we make a mistake elsewhere.
       map.delete(key);
     }
   };
