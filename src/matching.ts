@@ -201,9 +201,9 @@ export const initializeMatching = (
             currentStopSequence !== cachedVehicleJourney.stopSequence
           ) {
             resetTimer(uniqueVehicleId, () => {
-              const allVendorsApcItem = apcCache.get(uniqueVehicleId);
-              if (allVendorsApcItem !== undefined) {
-                allVendorsApcItem.forEach((oneVendorApc) => {
+              const vendorsApc = apcCache.get(uniqueVehicleId);
+              if (vendorsApc !== undefined) {
+                vendorsApc.forEach((oneVendorApc) => {
                   const matchedApcMessage = formMatchedApcMessage(
                     cachedVehicleJourney,
                     oneVendorApc
