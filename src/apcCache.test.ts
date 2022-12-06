@@ -1,4 +1,5 @@
-import { pickLowerQuality, sumDoorCounts } from "./apcCache";
+import pino from "pino";
+import { createApcCache, pickLowerQuality, sumDoorCounts } from "./apcCache";
 import * as stringentApc from "./quicktype/stringentApc";
 
 test("Pick the lower quality from two quality levels", () => {
@@ -246,4 +247,49 @@ describe("Sum door counts", () => {
     ];
     expect(sumDoorCounts(cached, toBeAdded)).toStrictEqual(expected);
   });
+});
+
+test("Add several vendors for one vehicle into APC cache", () => {
+  const logger = pino(
+    {
+      name: "waltti-apc-journey-matcher",
+      timestamp: pino.stdTimeFunctions.isoTime,
+      // As logger is started before config is created, read the level from env.
+      level: process.env["PINO_LOG_LEVEL"] ?? "info",
+    },
+    pino.destination({ sync: true })
+  );
+  const { get, add, remove } = createApcCache(logger);
+  const vehicle1 = "Vehicle1";
+  expect(get(vehicle1)).toBeUndefined();
+  add(vehicle1, {
+    countingVendorName: "Vendor1",
+    eventTimestamp: 123,
+    vehicleCounts: {
+      countquality: stringentApc.Countquality.Regular,
+      doorcounts: [
+        {
+          door: "door1",
+          count: [{ class: stringentApc.Class.Adult, in: 1, out: 0 }],
+        },
+      ],
+    },
+  });
+  expect(get(vehicle1)).toHaveLength(1);
+  add(vehicle1, {
+    countingVendorName: "Vendor2",
+    eventTimestamp: 124,
+    vehicleCounts: {
+      countquality: stringentApc.Countquality.Regular,
+      doorcounts: [
+        {
+          door: "door1",
+          count: [{ class: stringentApc.Class.Adult, in: 1, out: 0 }],
+        },
+      ],
+    },
+  });
+  expect(get(vehicle1)).toHaveLength(2);
+  remove(vehicle1);
+  expect(get(vehicle1)).toBeUndefined();
 });
