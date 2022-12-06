@@ -133,11 +133,20 @@ export const initializeMatching = (
       return;
     }
     const [uniqueVehicleId, countingVendorName] = countingSystemDetails;
-    apcCache.add(uniqueVehicleId, {
+    const apcCacheValue = {
       vehicleCounts: apcMessage.APC.vehiclecounts,
       countingVendorName,
       eventTimestamp: apcPulsarMessage.getEventTimestamp(),
-    });
+    };
+    logger.debug(
+      {
+        uniqueVehicleId,
+        countingVendorName,
+        eventTimestamp: apcPulsarMessage.getEventTimestamp(),
+      },
+      "Add into APC cache"
+    );
+    apcCache.add(uniqueVehicleId, apcCacheValue);
   };
 
   const expandWithApcAndSend = (
@@ -165,6 +174,10 @@ export const initializeMatching = (
       );
       return;
     }
+    logger.debug(
+      { nEntity: gtfsrtMessage.entity.length },
+      "Handle each GTFS Realtime entity"
+    );
     gtfsrtMessage.entity.forEach((entity) => {
       const uniqueVehicleId = getUniqueVehicleId(
         entity,
@@ -178,6 +191,7 @@ export const initializeMatching = (
         return;
       }
       if (includedVehicles.has(uniqueVehicleId)) {
+        logger.debug({ uniqueVehicleId }, "Got message for included vehicle");
         const vehicleJourney = formVehicleJourney(entity, feedDetails);
         if (vehicleJourney === undefined) {
           logger.warn(
@@ -191,6 +205,10 @@ export const initializeMatching = (
           // The very first message should not trigger sending as we are waiting
           // for the moment of stopSequence change to trigger sending and that
           // cannot be determined without another message to compare to.
+          logger.debug(
+            { uniqueVehicleId },
+            "Cache the vehicle for the first time"
+          );
           vehicleJourneyCache.set(uniqueVehicleId, vehicleJourney);
         } else {
           const currentStopSequence = entity.vehicle?.currentStopSequence;
@@ -205,16 +223,37 @@ export const initializeMatching = (
             entity.vehicle?.trip?.tripId !== cachedVehicleJourney.tripId ||
             currentStopSequence !== cachedVehicleJourney.stopSequence
           ) {
+            logger.debug(
+              {
+                uniqueVehicleId,
+                cachedVehicleJourneyTripId: cachedVehicleJourney.tripId,
+                cachedVehicleJourneyStopSequence:
+                  cachedVehicleJourney.stopSequence,
+                currentStopSequence,
+                tripId: entity.vehicle?.trip?.tripId,
+              },
+              "Trigger timer to send APC messages"
+            );
             resetTimer(uniqueVehicleId, () => {
+              logger.debug(
+                { uniqueVehicleId },
+                "Possibly send matched APC message"
+              );
               const vendorsApc = apcCache.get(uniqueVehicleId);
               if (vendorsApc !== undefined) {
                 vendorsApc.forEach((oneVendorApc) => {
+                  logger.debug(
+                    { cachedVehicleJourney, oneVendorApc },
+                    "Form matched APC message"
+                  );
                   const matchedApcMessage = formMatchedApcMessage(
                     cachedVehicleJourney,
                     oneVendorApc
                   );
+                  logger.debug("Send matched APC message");
                   sendCallback(matchedApcMessage);
                 });
+                logger.debug({ uniqueVehicleId }, "Remove APC cache value");
                 // The sent messages might not have been acked yet by the
                 // cluster.
                 apcCache.remove(uniqueVehicleId);
@@ -223,6 +262,15 @@ export const initializeMatching = (
             // We assume that the stopSequence will not change before the
             // timeout has fired, i.e. not before apcWaitInSeconds has passed.
             vehicleJourneyCache.set(uniqueVehicleId, vehicleJourney);
+          } else {
+            logger.debug(
+              {
+                uniqueVehicleId,
+                tripId: entity.vehicle?.trip?.tripId,
+                currentStopSequence,
+              },
+              "Saw the same stop sequence for the same trip again"
+            );
           }
         }
       }

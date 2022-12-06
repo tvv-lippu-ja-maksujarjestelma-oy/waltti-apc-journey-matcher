@@ -16,12 +16,30 @@ const keepReactingToGtfsrt = async (
   /* eslint-disable no-await-in-loop */
   for (;;) {
     const gtfsrtPulsarMessage = await gtfsrtConsumer.receive();
+    logger.debug(
+      {
+        topic: gtfsrtPulsarMessage.getTopicName(),
+        eventTimestamp: gtfsrtPulsarMessage.getEventTimestamp(),
+        messageId: gtfsrtPulsarMessage.getMessageId().toString(),
+        properties: gtfsrtPulsarMessage.getProperties(),
+      },
+      "Received gtfsrtPulsarMessage"
+    );
     expandWithApcAndSend(gtfsrtPulsarMessage, (matchedApcMessage) => {
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       producer.send(matchedApcMessage);
       logger.debug("Matched APC message sent");
     });
+    logger.debug(
+      {
+        topic: gtfsrtPulsarMessage.getTopicName(),
+        eventTimestamp: gtfsrtPulsarMessage.getEventTimestamp(),
+        messageId: gtfsrtPulsarMessage.getMessageId().toString(),
+        properties: gtfsrtPulsarMessage.getProperties(),
+      },
+      "Ack gtfsrtPulsarMessage"
+    );
     // In case of an error, exit via the listener on unhandledRejection.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     gtfsrtConsumer.acknowledge(gtfsrtPulsarMessage);
