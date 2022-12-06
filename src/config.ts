@@ -5,9 +5,11 @@ import type { Apc } from "./quicktype/stringentApc";
 
 export type UniqueVehicleId = string;
 
+export type CountingVendorName = MatchedApc["countingVendorName"];
+
 export type CountingSystemMap = Map<
   NonNullable<Apc["countingSystemId"]>,
-  [UniqueVehicleId, MatchedApc["countingVendorName"]]
+  [UniqueVehicleId, CountingVendorName]
 >;
 
 export type FeedPublisherId = string;
