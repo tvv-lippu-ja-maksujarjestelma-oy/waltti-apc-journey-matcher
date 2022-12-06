@@ -1,6 +1,6 @@
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
-import { ApcCacheValue, createApcCache } from "./apcCache";
+import { ApcCacheValueElement, createApcCache } from "./apcCache";
 import type {
   CountingSystemMap,
   FeedMap,
@@ -63,13 +63,12 @@ const flattenCounts = (
 
 const expandWithApc = (
   vehicleJourney: VehicleJourney,
-  apcCacheValue: ApcCacheValue
+  oneVendorApc: ApcCacheValueElement
 ): matchedApc.MatchedApc => ({
-  countQuality: apcCacheValue.vehicleCounts.countquality,
-  countingVendorName: apcCacheValue.countingVendorName,
+  countQuality: oneVendorApc.vehicleCounts.countquality,
+  countingVendorName: oneVendorApc.countingVendorName,
   directionId: vehicleJourney.directionId,
-  doorClassCounts:
-    apcCacheValue.vehicleCounts.doorcounts.flatMap(flattenCounts),
+  doorClassCounts: oneVendorApc.vehicleCounts.doorcounts.flatMap(flattenCounts),
   feedPublisherId: vehicleJourney.feedPublisherId,
   routeId: vehicleJourney.routeId,
   startDate: vehicleJourney.startDate,
@@ -82,16 +81,16 @@ const expandWithApc = (
 
 const formMatchedApcMessage = (
   vehicleJourney: VehicleJourney,
-  apcCacheValue: ApcCacheValue
+  oneVendorApc: ApcCacheValueElement
 ): Pulsar.ProducerMessage => {
-  const matchedApcData = expandWithApc(vehicleJourney, apcCacheValue);
+  const matchedApcData = expandWithApc(vehicleJourney, oneVendorApc);
   const encoded = Buffer.from(
     matchedApc.Convert.matchedApcToJson(matchedApcData),
     "utf8"
   );
   return {
     data: encoded,
-    eventTimestamp: apcCacheValue.eventTimestamp,
+    eventTimestamp: oneVendorApc.eventTimestamp,
   };
 };
 
@@ -99,7 +98,7 @@ export const initializeMatching = (
   logger: pino.Logger,
   { apcWaitInSeconds, countingSystemMap, feedMap }: ProcessingConfig
 ) => {
-  const apcCache = createApcCache();
+  const apcCache = createApcCache(logger);
   const vehicleJourneyCache = createVehicleJourneyCache();
   const resetTimer = createTimerMap(apcWaitInSeconds);
   const includedVehicles =
@@ -202,14 +201,17 @@ export const initializeMatching = (
             currentStopSequence !== cachedVehicleJourney.stopSequence
           ) {
             resetTimer(uniqueVehicleId, () => {
-              const apcCacheItem = apcCache.get(uniqueVehicleId);
-              if (apcCacheItem !== undefined) {
-                const matchedApcMessage = formMatchedApcMessage(
-                  cachedVehicleJourney,
-                  apcCacheItem
-                );
-                sendCallback(matchedApcMessage);
-                // The sent message might not have been acked yet by the cluster.
+              const vendorsApc = apcCache.get(uniqueVehicleId);
+              if (vendorsApc !== undefined) {
+                vendorsApc.forEach((oneVendorApc) => {
+                  const matchedApcMessage = formMatchedApcMessage(
+                    cachedVehicleJourney,
+                    oneVendorApc
+                  );
+                  sendCallback(matchedApcMessage);
+                });
+                // The sent messages might not have been acked yet by the
+                // cluster.
                 apcCache.remove(uniqueVehicleId);
               }
             });

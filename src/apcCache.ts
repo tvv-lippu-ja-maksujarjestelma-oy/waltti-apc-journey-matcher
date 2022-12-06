@@ -1,15 +1,14 @@
-import type { UniqueVehicleId } from "./config";
+import type pino from "pino";
+import type { CountingVendorName, UniqueVehicleId } from "./config";
 import * as stringentApc from "./quicktype/stringentApc";
 
 export type ApcCacheKey = UniqueVehicleId;
-
-export interface ApcCacheValue {
+export interface ApcCacheValueElement {
   vehicleCounts: stringentApc.Vehiclecounts;
-  countingVendorName: string;
+  countingVendorName: CountingVendorName;
   eventTimestamp: number;
 }
-
-export type ApcCache = Map<ApcCacheKey, ApcCacheValue>;
+export type ApcCache = Map<ApcCacheKey, ApcCacheValueElement[]>;
 
 /**
  * Select the lower of the two quality levels. Consider the quality order as
@@ -99,13 +98,21 @@ export const sumVehicleCounts = (
   };
 };
 
-export const sumApcCacheValues = (
-  oldValue: ApcCacheValue,
-  newValue: ApcCacheValue
-): ApcCacheValue => {
+export const sumApcCacheValueElements = (
+  logger: pino.Logger,
+  oldValue: ApcCacheValueElement,
+  newValue: ApcCacheValueElement
+): ApcCacheValueElement => {
   // Retain only the latest timestamp.
   const { countingVendorName, eventTimestamp } = newValue;
   if (countingVendorName !== oldValue.countingVendorName) {
+    logger.fatal(
+      {
+        oldCountingVendorName: oldValue.countingVendorName,
+        countingVendorName,
+      },
+      "Old and new countingVendorName should be identical"
+    );
     throw new Error(
       `Old and new countingVendorName should be identical. Instead old value is ${oldValue.countingVendorName} and new value is ${countingVendorName}.`
     );
@@ -121,24 +128,67 @@ export const sumApcCacheValues = (
   };
 };
 
-export const createApcCache = (): {
-  get: (key: ApcCacheKey) => ApcCacheValue | undefined;
-  add: (key: ApcCacheKey, value: ApcCacheValue) => void;
+export const createApcCache = (
+  logger: pino.Logger
+): {
+  get: (key: ApcCacheKey) => ApcCacheValueElement[] | undefined;
+  add: (key: ApcCacheKey, value: ApcCacheValueElement) => void;
   remove: (key: ApcCacheKey) => boolean;
 } => {
-  const cache: ApcCache = new Map<ApcCacheKey, ApcCacheValue>();
+  const cache: ApcCache = new Map<ApcCacheKey, ApcCacheValueElement[]>();
 
-  const get = (key: ApcCacheKey): ApcCacheValue | undefined => cache.get(key);
+  // Get counts of all vendors for given vehicle.
+  const get = (key: ApcCacheKey): ApcCacheValueElement[] | undefined =>
+    cache.get(key);
 
-  const add = (key: ApcCacheKey, value: ApcCacheValue): void => {
-    const old = cache.get(key);
-    if (old === undefined) {
-      cache.set(key, value);
+  // Add counts of one vendor for given vehicle.
+  const add = (key: ApcCacheKey, valueElement: ApcCacheValueElement): void => {
+    const elements = cache.get(key);
+    if (elements === undefined) {
+      cache.set(key, [valueElement]);
     } else {
-      cache.set(key, sumApcCacheValues(old, value));
+      if (elements.length < 1) {
+        logger.fatal(
+          { key, cache: JSON.stringify(cache) },
+          "apcCache must not have an empty array stored for a key"
+        );
+        throw new Error(
+          `apcCache ${JSON.stringify(
+            cache
+          )} has an empty array stored for key ${key}`
+        );
+      }
+      const { countingVendorName } = valueElement;
+      const index = elements.findIndex(
+        (elem) => elem.countingVendorName === countingVendorName
+      );
+      if (index < 0) {
+        elements.push(valueElement);
+        cache.set(key, elements);
+      } else {
+        const oldValueElement = elements[index];
+        if (oldValueElement === undefined) {
+          logger.fatal(
+            { elements, index, countingVendorName },
+            "oldValueElement must not be undefined"
+          );
+          throw new Error(
+            `oldValueElement must not be undefined. countingVendorName ${countingVendorName} was expected to be in index ${index} of elements ${JSON.stringify(
+              elements
+            )}`
+          );
+        }
+        elements[index] = sumApcCacheValueElements(
+          logger,
+          oldValueElement,
+          valueElement
+        );
+        cache.set(key, elements);
+      }
     }
   };
 
+  // Remove counts of all vendors for given vehicle.
   const remove = (key: ApcCacheKey): boolean => cache.delete(key);
 
   return {
