@@ -4,30 +4,45 @@ import type { ProcessingConfig } from "./config";
 import { initializeMatching } from "./matching";
 
 const keepReactingToGtfsrt = async (
+  logger: pino.Logger,
   producer: Pulsar.Producer,
   gtfsrtConsumer: Pulsar.Consumer,
   expandWithApcAndSend: (
     gtfsrtMessage: Pulsar.Message,
-    sendCallback: (fullApcMessage: Pulsar.ProducerMessage | undefined) => void
+    sendCallback: (fullApcMessage: Pulsar.ProducerMessage) => void
   ) => void
 ) => {
   // Errors are handled in the calling function.
   /* eslint-disable no-await-in-loop */
   for (;;) {
     const gtfsrtPulsarMessage = await gtfsrtConsumer.receive();
+    logger.debug(
+      {
+        topic: gtfsrtPulsarMessage.getTopicName(),
+        eventTimestamp: gtfsrtPulsarMessage.getEventTimestamp(),
+        messageId: gtfsrtPulsarMessage.getMessageId().toString(),
+        properties: gtfsrtPulsarMessage.getProperties(),
+      },
+      "Received gtfsrtPulsarMessage"
+    );
     expandWithApcAndSend(gtfsrtPulsarMessage, (matchedApcMessage) => {
-      if (matchedApcMessage !== undefined) {
-        // In case of an error, exit via the listener on unhandledRejection.
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        producer
-          .send(matchedApcMessage)
-          .then(() => gtfsrtConsumer.acknowledge(gtfsrtPulsarMessage));
-      } else {
-        // In case of an error, exit via the listener on unhandledRejection.
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        gtfsrtConsumer.acknowledge(gtfsrtPulsarMessage);
-      }
+      // In case of an error, exit via the listener on unhandledRejection.
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      producer.send(matchedApcMessage);
+      logger.debug("Matched APC message sent");
     });
+    logger.debug(
+      {
+        topic: gtfsrtPulsarMessage.getTopicName(),
+        eventTimestamp: gtfsrtPulsarMessage.getEventTimestamp(),
+        messageId: gtfsrtPulsarMessage.getMessageId().toString(),
+        properties: gtfsrtPulsarMessage.getProperties(),
+      },
+      "Ack gtfsrtPulsarMessage"
+    );
+    // In case of an error, exit via the listener on unhandledRejection.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    gtfsrtConsumer.acknowledge(gtfsrtPulsarMessage);
   }
   /* eslint-enable no-await-in-loop */
 };
@@ -60,7 +75,12 @@ const keepProcessingMessages = async (
     config
   );
   const promises = [
-    keepReactingToGtfsrt(producer, gtfsrtConsumer, expandWithApcAndSend),
+    keepReactingToGtfsrt(
+      logger,
+      producer,
+      gtfsrtConsumer,
+      expandWithApcAndSend
+    ),
     keepSummingApcValues(apcConsumer, updateApcCache),
   ];
   // We expect both promises to stay pending.

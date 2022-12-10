@@ -1,6 +1,6 @@
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
-import { ApcCacheValue, createApcCache } from "./apcCache";
+import { ApcCacheValueElement, createApcCache } from "./apcCache";
 import type {
   CountingSystemMap,
   FeedMap,
@@ -19,9 +19,11 @@ import createTimerMap from "./timerMap";
 
 export const extractVehiclesFromCountingSystemMap = (
   countingSystemMap: CountingSystemMap
-): UniqueVehicleId[] =>
-  Array.from(countingSystemMap.values()).map(
-    ([uniqueVehicleId]) => uniqueVehicleId
+): Set<UniqueVehicleId> =>
+  new Set(
+    Array.from(countingSystemMap.values()).map(
+      ([uniqueVehicleId]) => uniqueVehicleId
+    )
   );
 
 export const getFeedDetails = (
@@ -63,13 +65,12 @@ const flattenCounts = (
 
 const expandWithApc = (
   vehicleJourney: VehicleJourney,
-  apcCacheValue: ApcCacheValue
+  oneVendorApc: ApcCacheValueElement
 ): matchedApc.MatchedApc => ({
-  countQuality: apcCacheValue.vehicleCounts.countquality,
-  countingVendorName: apcCacheValue.countingVendorName,
+  countQuality: oneVendorApc.vehicleCounts.countquality,
+  countingVendorName: oneVendorApc.countingVendorName,
   directionId: vehicleJourney.directionId,
-  doorClassCounts:
-    apcCacheValue.vehicleCounts.doorcounts.flatMap(flattenCounts),
+  doorClassCounts: oneVendorApc.vehicleCounts.doorcounts.flatMap(flattenCounts),
   feedPublisherId: vehicleJourney.feedPublisherId,
   routeId: vehicleJourney.routeId,
   startDate: vehicleJourney.startDate,
@@ -82,16 +83,16 @@ const expandWithApc = (
 
 const formMatchedApcMessage = (
   vehicleJourney: VehicleJourney,
-  apcCacheValue: ApcCacheValue
+  oneVendorApc: ApcCacheValueElement
 ): Pulsar.ProducerMessage => {
-  const matchedApcData = expandWithApc(vehicleJourney, apcCacheValue);
+  const matchedApcData = expandWithApc(vehicleJourney, oneVendorApc);
   const encoded = Buffer.from(
     matchedApc.Convert.matchedApcToJson(matchedApcData),
     "utf8"
   );
   return {
     data: encoded,
-    eventTimestamp: apcCacheValue.eventTimestamp,
+    eventTimestamp: oneVendorApc.eventTimestamp,
   };
 };
 
@@ -99,7 +100,7 @@ export const initializeMatching = (
   logger: pino.Logger,
   { apcWaitInSeconds, countingSystemMap, feedMap }: ProcessingConfig
 ) => {
-  const apcCache = createApcCache();
+  const apcCache = createApcCache(logger);
   const vehicleJourneyCache = createVehicleJourneyCache();
   const resetTimer = createTimerMap(apcWaitInSeconds);
   const includedVehicles =
@@ -132,16 +133,25 @@ export const initializeMatching = (
       return;
     }
     const [uniqueVehicleId, countingVendorName] = countingSystemDetails;
-    apcCache.add(uniqueVehicleId, {
+    const apcCacheValue = {
       vehicleCounts: apcMessage.APC.vehiclecounts,
       countingVendorName,
       eventTimestamp: apcPulsarMessage.getEventTimestamp(),
-    });
+    };
+    logger.debug(
+      {
+        uniqueVehicleId,
+        countingVendorName,
+        eventTimestamp: apcPulsarMessage.getEventTimestamp(),
+      },
+      "Add into APC cache"
+    );
+    apcCache.add(uniqueVehicleId, apcCacheValue);
   };
 
   const expandWithApcAndSend = (
     gtfsrtPulsarMessage: Pulsar.Message,
-    sendCallback: (fullApcMessage: Pulsar.ProducerMessage | undefined) => void
+    sendCallback: (fullApcMessage: Pulsar.ProducerMessage) => void
   ): void => {
     let gtfsrtMessage;
     try {
@@ -153,7 +163,6 @@ export const initializeMatching = (
         { err },
         "The GTFS Realtime message does not conform to the proto definition"
       );
-      sendCallback(undefined);
       return;
     }
     const pulsarTopic = gtfsrtPulsarMessage.getTopicName();
@@ -163,9 +172,12 @@ export const initializeMatching = (
         { pulsarTopic, gtfsrtMessage: JSON.stringify(gtfsrtMessage) },
         "Could not get feed details from the Pulsar topic name"
       );
-      sendCallback(undefined);
       return;
     }
+    logger.debug(
+      { nEntity: gtfsrtMessage.entity.length },
+      "Handle each GTFS Realtime entity"
+    );
     gtfsrtMessage.entity.forEach((entity) => {
       const uniqueVehicleId = getUniqueVehicleId(
         entity,
@@ -176,21 +188,27 @@ export const initializeMatching = (
           { feedDetails, feedEntity: JSON.stringify(entity) },
           "Could not form uniqueVehicleId from the feed entity"
         );
-        sendCallback(undefined);
         return;
       }
-      if (includedVehicles.includes(uniqueVehicleId)) {
+      if (includedVehicles.has(uniqueVehicleId)) {
+        logger.debug({ uniqueVehicleId }, "Got message for included vehicle");
         const vehicleJourney = formVehicleJourney(entity, feedDetails);
         if (vehicleJourney === undefined) {
           logger.warn(
             { feedEntity: JSON.stringify(entity) },
             "The feed entity could not be turned into vehicle journey"
           );
-          sendCallback(undefined);
           return;
         }
         const cachedVehicleJourney = vehicleJourneyCache.get(uniqueVehicleId);
         if (cachedVehicleJourney === undefined) {
+          // The very first message should not trigger sending as we are waiting
+          // for the moment of stopSequence change to trigger sending and that
+          // cannot be determined without another message to compare to.
+          logger.debug(
+            { uniqueVehicleId },
+            "Cache the vehicle for the first time"
+          );
           vehicleJourneyCache.set(uniqueVehicleId, vehicleJourney);
         } else {
           const currentStopSequence = entity.vehicle?.currentStopSequence;
@@ -199,27 +217,60 @@ export const initializeMatching = (
               { feedEntity: JSON.stringify(entity) },
               "The feed entity has no currentStopSequence"
             );
-            sendCallback(undefined);
             return;
           }
           if (
             entity.vehicle?.trip?.tripId !== cachedVehicleJourney.tripId ||
             currentStopSequence !== cachedVehicleJourney.stopSequence
           ) {
+            logger.debug(
+              {
+                uniqueVehicleId,
+                cachedVehicleJourneyTripId: cachedVehicleJourney.tripId,
+                cachedVehicleJourneyStopSequence:
+                  cachedVehicleJourney.stopSequence,
+                currentStopSequence,
+                tripId: entity.vehicle?.trip?.tripId,
+              },
+              "Trigger timer to send APC messages"
+            );
             resetTimer(uniqueVehicleId, () => {
-              const apcCacheItem = apcCache.get(uniqueVehicleId);
-              if (apcCacheItem !== undefined) {
-                const matchedApcMessage = formMatchedApcMessage(
-                  cachedVehicleJourney,
-                  apcCacheItem
-                );
-                sendCallback(matchedApcMessage);
+              logger.debug(
+                { uniqueVehicleId },
+                "Possibly send matched APC message"
+              );
+              const vendorsApc = apcCache.get(uniqueVehicleId);
+              if (vendorsApc !== undefined) {
+                vendorsApc.forEach((oneVendorApc) => {
+                  logger.debug(
+                    { cachedVehicleJourney, oneVendorApc },
+                    "Form matched APC message"
+                  );
+                  const matchedApcMessage = formMatchedApcMessage(
+                    cachedVehicleJourney,
+                    oneVendorApc
+                  );
+                  logger.debug("Send matched APC message");
+                  sendCallback(matchedApcMessage);
+                });
+                logger.debug({ uniqueVehicleId }, "Remove APC cache value");
+                // The sent messages might not have been acked yet by the
+                // cluster.
                 apcCache.remove(uniqueVehicleId);
               }
             });
             // We assume that the stopSequence will not change before the
             // timeout has fired, i.e. not before apcWaitInSeconds has passed.
             vehicleJourneyCache.set(uniqueVehicleId, vehicleJourney);
+          } else {
+            logger.debug(
+              {
+                uniqueVehicleId,
+                tripId: entity.vehicle?.trip?.tripId,
+                currentStopSequence,
+              },
+              "Saw the same stop sequence for the same trip again"
+            );
           }
         }
       }
