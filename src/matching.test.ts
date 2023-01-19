@@ -3,6 +3,7 @@ import Pulsar from "pulsar-client";
 import type { CountingSystemMap, ProcessingConfig } from "./config";
 import {
   extractVehiclesFromCountingSystemMap,
+  getCountingSystemIdFromMqttTopic,
   getUniqueVehicleId,
   initializeMatching,
 } from "./matching";
@@ -20,6 +21,13 @@ test("Extracting vehicles from a valid counting system map succeeds", () => {
   expect(extractVehiclesFromCountingSystemMap(countingSystemMap)).toStrictEqual(
     uniqueVehicleIds
   );
+});
+
+test("Extracting countingSystemId from a valid MQTT topic succeeds", () => {
+  const mqttTopic =
+    "apc-from-vehicle/v1/fi/waltti/telia/luminator-telia-apc-00160";
+  const result = "luminator-telia-apc-00160";
+  expect(getCountingSystemIdFromMqttTopic(mqttTopic)).toStrictEqual(result);
 });
 
 test("Getting the unique vehicle ID from a valid FeedEntity succeeds", () => {
