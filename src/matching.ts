@@ -2,6 +2,7 @@ import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import { ApcCacheValueElement, createApcCache } from "./apcCache";
 import type {
+  CountingSystemId,
   CountingSystemMap,
   FeedMap,
   ProcessingConfig,
@@ -52,6 +53,11 @@ export const getUniqueVehicleId = (
   }
   return result;
 };
+
+export const getCountingSystemIdFromMqttTopic = (
+  mqttTopic: string | undefined
+): CountingSystemId | undefined =>
+  mqttTopic === undefined ? undefined : mqttTopic.split("/").at(5);
 
 const flattenCounts = (
   doorCounts: stringentApc.Doorcount
@@ -122,9 +128,24 @@ export const initializeMatching = (
       );
       return;
     }
-    const countingSystemDetails = countingSystemMap.get(
-      apcMessage.APC.countingSystemId
-    );
+    const countingSystemId =
+      apcMessage.APC.countingSystemId ??
+      getCountingSystemIdFromMqttTopic(
+        apcPulsarMessage.getProperties()["mqttTopic"]
+      );
+    if (countingSystemId === undefined) {
+      logger.error(
+        {
+          apcMessage: JSON.stringify(apcMessage),
+          apcPulsarMessageProperties: JSON.stringify(
+            apcPulsarMessage.getProperties()
+          ),
+        },
+        "countingSystemId could not be found from the Pulsar message payload nor the properties. The bug seems to be upstream along the data pipeline."
+      );
+      return;
+    }
+    const countingSystemDetails = countingSystemMap.get(countingSystemId);
     if (countingSystemDetails === undefined) {
       logger.error(
         { apcMessage: JSON.stringify(apcMessage), countingSystemMap },

@@ -91,13 +91,7 @@
           "additionalProperties": true
         }
       },
-      "required": [
-        "schemaVersion",
-        "countingSystemId",
-        "messageId",
-        "tst",
-        "vehiclecounts"
-      ],
+      "required": ["schemaVersion", "messageId", "tst", "vehiclecounts"],
       "additionalProperties": true
     }
   },

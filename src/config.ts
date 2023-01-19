@@ -3,12 +3,14 @@ import Pulsar from "pulsar-client";
 import type { MatchedApc } from "./quicktype/matchedApc";
 import type { Apc } from "./quicktype/stringentApc";
 
+export type CountingSystemId = NonNullable<Apc["countingSystemId"]>;
+
 export type UniqueVehicleId = string;
 
 export type CountingVendorName = MatchedApc["countingVendorName"];
 
 export type CountingSystemMap = Map<
-  NonNullable<Apc["countingSystemId"]>,
+  CountingSystemId,
   [UniqueVehicleId, CountingVendorName]
 >;
 

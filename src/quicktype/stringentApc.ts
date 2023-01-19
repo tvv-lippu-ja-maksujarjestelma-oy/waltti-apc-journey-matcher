@@ -350,7 +350,11 @@ const typeMap: any = {
   StringentApcMessage: o([{ json: "APC", js: "APC", typ: r("Apc") }], false),
   Apc: o(
     [
-      { json: "countingSystemId", js: "countingSystemId", typ: u(undefined, "") },
+      {
+        json: "countingSystemId",
+        js: "countingSystemId",
+        typ: u(undefined, ""),
+      },
       { json: "messageId", js: "messageId", typ: "" },
       { json: "schemaVersion", js: "schemaVersion", typ: "" },
       { json: "tst", js: "tst", typ: "" },
