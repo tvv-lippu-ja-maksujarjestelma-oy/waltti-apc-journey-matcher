@@ -29,7 +29,7 @@ export interface Apc {
    * sensor systems from different vendors in different vehicles. E.g.
    * 'vendor1-client2-apc-device3' or possibly a UUIDv4 string. Needs to be universally unique.
    */
-  countingSystemId: string;
+  countingSystemId?: string;
   /**
    * UUIDv4 for each unique message
    */
@@ -350,7 +350,7 @@ const typeMap: any = {
   StringentApcMessage: o([{ json: "APC", js: "APC", typ: r("Apc") }], false),
   Apc: o(
     [
-      { json: "countingSystemId", js: "countingSystemId", typ: "" },
+      { json: "countingSystemId", js: "countingSystemId", typ: u(undefined, "") },
       { json: "messageId", js: "messageId", typ: "" },
       { json: "schemaVersion", js: "schemaVersion", typ: "" },
       { json: "tst", js: "tst", typ: "" },
