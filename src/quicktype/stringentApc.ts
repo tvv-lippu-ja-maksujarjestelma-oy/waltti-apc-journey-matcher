@@ -89,7 +89,7 @@ export interface Doorcount {
    * Identification of the door. The door closest to the front of the vehicle is 'door1'. The
    * next door is 'door2' etc.
    */
-  door: string;
+  door: number | string;
   [property: string]: any;
 }
 
@@ -372,7 +372,7 @@ const typeMap: any = {
   Doorcount: o(
     [
       { json: "count", js: "count", typ: a(r("Count")) },
-      { json: "door", js: "door", typ: "" },
+      { json: "door", js: "door", typ: u(0, "") },
     ],
     "any"
   ),

@@ -66,7 +66,8 @@ const flattenCounts = (
     countClass: currentCount.class,
     in: currentCount.in,
     out: currentCount.out,
-    doorName: doorCounts.door,
+    // Telia might send an integer.
+    doorName: doorCounts.door.toString(),
   }));
 
 const expandWithApc = (
