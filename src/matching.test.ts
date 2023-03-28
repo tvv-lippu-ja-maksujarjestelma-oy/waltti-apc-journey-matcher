@@ -150,11 +150,15 @@ const decodeMatchedApcPulsarProducerMessage = (
 ) => matchedApc.Convert.toMatchedApc(message.data.toString("utf8"));
 
 // eslint-disable-next-line jest/no-done-callback
-test("match with results of initializeMatching", (done) => {
-  const logger = pino({
-    name: "tester",
-    timestamp: pino.stdTimeFunctions.isoTime,
-  });
+test("Match with results of initializeMatching", (done) => {
+  const logger = pino(
+    {
+      name: "tester",
+      timestamp: pino.stdTimeFunctions.isoTime,
+      level: "debug",
+    },
+    pino.destination({ sync: true })
+  );
   jest.useFakeTimers({ doNotFake: ["performance"] });
   jest.spyOn(global, "setTimeout");
 
