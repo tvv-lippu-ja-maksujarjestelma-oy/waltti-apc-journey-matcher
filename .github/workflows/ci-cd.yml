@@ -21,6 +21,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+      - name: Install NPM dependencies
+        run: npm ci
+      # This step considers also the files ignored in .dockerignore, such as
+      # documentation and GitHub Actions workflows.
+      - name: Check and test outside Docker
+        run: npm run check-and-build
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -46,7 +57,9 @@ jobs:
           load: true
           target: "${{ env.TEST_STAGE }}"
           tags: "${{ env.IMAGE_NAME }}:${{ env.TEST_STAGE }}"
-      - name: Check and test
+      # This step runs the tests in an environment that closely resembles the
+      # production Docker image.
+      - name: Check and test inside Docker
         run: |
           docker run --rm "${{ env.IMAGE_NAME }}:${{ env.TEST_STAGE }}"
       - name: Build and push
