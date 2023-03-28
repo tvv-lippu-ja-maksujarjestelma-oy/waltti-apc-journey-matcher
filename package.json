@@ -57,7 +57,7 @@
   "dependencies": {
     "pino": "^8.5.0",
     "protobufjs": "^7.0.0",
-    "pulsar-client": "https://github.com/apache/pulsar-client-node/tarball/40ac35e7668ef0a3dc7aa62fc670838f5871b543"
+    "pulsar-client": "^1.8.1"
   },
   "jest": {
     "preset": "ts-jest/presets/js-with-ts",
