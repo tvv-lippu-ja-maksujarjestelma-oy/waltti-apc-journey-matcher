@@ -106,10 +106,11 @@ const exitGracefully = async (
  */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 (async () => {
+  const serviceName = "waltti-apc-journey-matcher";
   /* eslint-enable @typescript-eslint/no-floating-promises */
   try {
     const logger = pino({
-      name: "waltti-apc-journey-matcher",
+      name: serviceName,
       timestamp: pino.stdTimeFunctions.isoTime,
     });
 
@@ -148,6 +149,7 @@ const exitGracefully = async (
       process.on("SIGQUIT", (signal) => exitHandler(131, new Error(signal)));
       process.on("SIGTERM", (signal) => exitHandler(143, new Error(signal)));
 
+      logger.info(`Start service ${serviceName}`);
       logger.info("Read configuration");
       const config = getConfig(logger);
       logger.info("Create mapping functions");
