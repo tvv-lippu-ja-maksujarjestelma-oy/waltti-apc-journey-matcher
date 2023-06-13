@@ -8,26 +8,133 @@
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
 
+/**
+ * Automatic passenger counting (APC) results per stop and trip.
+ */
 export interface MatchedApc {
-  countQuality: string;
+  /**
+   * Authority ID as used by Waltti, e.g. '203' for Hämeenlinna. Identifiers listed here:
+   * https://opendata.waltti.fi/docs#gtfs-static-packages .
+   */
+  authorityId: string;
+  /**
+   * Information on the quality of the counting result, as described by the ITxPT standard.
+   */
+  countQuality: CountQuality;
+  /**
+   * An ID for the onboard APC system in one vehicle.
+   */
+  countingDeviceId: string;
+  /**
+   * The name of the APC vendor that is responsible for this counting device.
+   */
   countingVendorName: string;
-  directionId: number;
   doorClassCounts: DoorClassCount[];
-  feedPublisherId: string;
-  routeId: string;
-  startDate: string;
-  startTime: string;
-  stopId: string;
-  stopSequence: number;
+  /**
+   * current_stop_sequence from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-vehicleposition .
+   */
+  gtfsrtCurrentStopSequence: number;
+  /**
+   * direction_id from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-tripdescriptor .
+   */
+  gtfsrtDirectionId: number;
+  /**
+   * route_id from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-tripdescriptor .
+   */
+  gtfsrtRouteId: string;
+  /**
+   * start_date from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-tripdescriptor . Operating date might be
+   * longer than 24 hours.
+   */
+  gtfsrtStartDate: string;
+  /**
+   * start_time from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-tripdescriptor . Operating date might be
+   * longer than 24 hours.
+   */
+  gtfsrtStartTime: string;
+  /**
+   * stop_id from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-vehicleposition .
+   */
+  gtfsrtStopId: string;
+  /**
+   * trip_id from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-tripdescriptor
+   */
+  gtfsrtTripId: string;
+  /**
+   * Vehicle ID i.e. VehicleDescriptor.id from the GTFS Realtime specification:
+   * https://gtfs.org/realtime/reference/#message-vehicledescriptor .
+   */
+  gtfsrtVehicleId: string;
+  /**
+   * The SchemaVer version number of the JSON schema that this message follows. A valid value
+   * is for example '1-0-0'.
+   */
+  schemaVersion?: string;
+  /**
+   * Timezone identifier for the GTFS Realtime trip details as defined by the tz (IANA)
+   * database. A valid value would be e.g. 'Europe/Helsinki'.
+   */
   timezoneName: string;
-  tripId: string;
+  /**
+   * A timestamp for the start time including the date. Unlike gtfsrtStartDate and
+   * gtfsrtStartTime, this value follows the usual Gregorian calendar so that outside of leap
+   * seconds there is exactly one timestamp representation for each moment in time. The value
+   * is an ISO 8601 UTC timestamp in the strftime format '%Y-%m-%dT%H:%M:%SZ'. A valid value
+   * would be e.g. '2021-11-22T10:57:08Z'. Use 24-hour linear smear from noon to noon UTC for
+   * leap seconds, like Google: https://developers.google.com/time/smear .
+   */
+  utcStartTime: string;
+  [property: string]: any;
+}
+
+/**
+ * Information on the quality of the counting result, as described by the ITxPT standard.
+ */
+export enum CountQuality {
+  Defect = "defect",
+  Other = "other",
+  Regular = "regular",
 }
 
 export interface DoorClassCount {
-  countClass: string;
+  /**
+   * Passenger type as described by ITxPT.
+   */
+  countClass: CountClass;
+  /**
+   * Identification of the door. The door closest to the front of a bus is '1'. The next door
+   * is '2' etc. The string type allows us to use this field later for unordered door names,
+   * for example in trains.
+   */
   doorName: string;
+  /**
+   * Number of passengers having boarded
+   */
   in: number;
+  /**
+   * Number of passengers having alighted
+   */
   out: number;
+  [property: string]: any;
+}
+
+/**
+ * Passenger type as described by ITxPT.
+ */
+export enum CountClass {
+  Adult = "adult",
+  Bike = "bike",
+  Child = "child",
+  Other = "other",
+  Pram = "pram",
+  Wheelchair = "wheelchair",
 }
 
 // Converts JSON strings to/from your types
@@ -235,32 +342,42 @@ function r(name: string) {
 const typeMap: any = {
   MatchedApc: o(
     [
-      { json: "countQuality", js: "countQuality", typ: "" },
+      { json: "authorityId", js: "authorityId", typ: "" },
+      { json: "countQuality", js: "countQuality", typ: r("CountQuality") },
+      { json: "countingDeviceId", js: "countingDeviceId", typ: "" },
       { json: "countingVendorName", js: "countingVendorName", typ: "" },
-      { json: "directionId", js: "directionId", typ: 0 },
       {
         json: "doorClassCounts",
         js: "doorClassCounts",
         typ: a(r("DoorClassCount")),
       },
-      { json: "feedPublisherId", js: "feedPublisherId", typ: "" },
-      { json: "routeId", js: "routeId", typ: "" },
-      { json: "startDate", js: "startDate", typ: "" },
-      { json: "startTime", js: "startTime", typ: "" },
-      { json: "stopId", js: "stopId", typ: "" },
-      { json: "stopSequence", js: "stopSequence", typ: 0 },
+      {
+        json: "gtfsrtCurrentStopSequence",
+        js: "gtfsrtCurrentStopSequence",
+        typ: 0,
+      },
+      { json: "gtfsrtDirectionId", js: "gtfsrtDirectionId", typ: 0 },
+      { json: "gtfsrtRouteId", js: "gtfsrtRouteId", typ: "" },
+      { json: "gtfsrtStartDate", js: "gtfsrtStartDate", typ: "" },
+      { json: "gtfsrtStartTime", js: "gtfsrtStartTime", typ: "" },
+      { json: "gtfsrtStopId", js: "gtfsrtStopId", typ: "" },
+      { json: "gtfsrtTripId", js: "gtfsrtTripId", typ: "" },
+      { json: "gtfsrtVehicleId", js: "gtfsrtVehicleId", typ: "" },
+      { json: "schemaVersion", js: "schemaVersion", typ: u(undefined, "") },
       { json: "timezoneName", js: "timezoneName", typ: "" },
-      { json: "tripId", js: "tripId", typ: "" },
+      { json: "utcStartTime", js: "utcStartTime", typ: "" },
     ],
-    false
+    "any"
   ),
   DoorClassCount: o(
     [
-      { json: "countClass", js: "countClass", typ: "" },
+      { json: "countClass", js: "countClass", typ: r("CountClass") },
       { json: "doorName", js: "doorName", typ: "" },
       { json: "in", js: "in", typ: 0 },
       { json: "out", js: "out", typ: 0 },
     ],
-    false
+    "any"
   ),
+  CountQuality: ["defect", "other", "regular"],
+  CountClass: ["adult", "bike", "child", "other", "pram", "wheelchair"],
 };
