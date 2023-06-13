@@ -72,14 +72,20 @@ test("Getting the unique vehicle ID from a valid FeedEntity succeeds", () => {
 
 const mockPulsarMessage = ({
   topic,
+  properties,
   buffer,
   eventTimestamp,
 }: {
   topic: string;
+  properties: { [key: string]: string };
   buffer: Buffer;
   eventTimestamp: number;
 }): Pulsar.Message => {
   const message = Object.defineProperties(new Pulsar.Message(), {
+    getProperties: {
+      value: () => properties,
+      writable: true,
+    },
     getData: {
       value: () => buffer,
       writable: true,
@@ -96,12 +102,14 @@ const mockPulsarMessage = ({
   return message;
 };
 
-const mockApcMessage = ({
+const mockStringentApcMessage = ({
   topic,
+  properties,
   content,
   eventTimestamp,
 }: {
   topic: string;
+  properties: { [key: string]: string };
   content: stringentApc.StringentApcMessage;
   eventTimestamp: number;
 }): Pulsar.Message => {
@@ -109,7 +117,7 @@ const mockApcMessage = ({
     stringentApc.Convert.stringentApcMessageToJson(content),
     "utf8"
   );
-  return mockPulsarMessage({ topic, buffer, eventTimestamp });
+  return mockPulsarMessage({ topic, properties, buffer, eventTimestamp });
 };
 
 const mockGtfsrtMessage = ({
@@ -131,7 +139,7 @@ const mockGtfsrtMessage = ({
     ).finish()
   );
   transit_realtime.FeedMessage.decode(buffer);
-  return mockPulsarMessage({ topic, buffer, eventTimestamp });
+  return mockPulsarMessage({ topic, properties: {}, buffer, eventTimestamp });
 };
 
 const mockMatchedApcPulsarProducerMessage = ({
@@ -182,8 +190,11 @@ test("Match with results of initializeMatching", (done) => {
       ],
     ]),
   };
-  const apcMessage1 = mockApcMessage({
+  const apcMessage1 = mockStringentApcMessage({
     topic: "persistent://tenant/namespace/apc",
+    properties: {
+      mqttTopic: "apc-from-vehicle/v1/fi/waltti/Vendor1/device1",
+    },
     content: {
       APC: {
         countingSystemId: "device1",
@@ -211,8 +222,11 @@ test("Match with results of initializeMatching", (done) => {
     },
     eventTimestamp: 1667413923789,
   });
-  const apcMessage2 = mockApcMessage({
+  const apcMessage2 = mockStringentApcMessage({
     topic: "persistent://tenant/namespace/apc",
+    properties: {
+      mqttTopic: "apc-from-vehicle/v1/fi/waltti/Vendor1/device1",
+    },
     content: {
       APC: {
         countingSystemId: "device1",
@@ -338,22 +352,41 @@ test("Match with results of initializeMatching", (done) => {
   });
   const expectedApcMessage = mockMatchedApcPulsarProducerMessage({
     content: {
-      countQuality: "regular",
-      countingVendorName: "Vendor1",
-      directionId: 0,
-      doorClassCounts: [
-        { countClass: "adult", doorName: "1", in: 2, out: 0 },
-        { countClass: "adult", doorName: "2", in: 0, out: 0 },
-        { countClass: "adult", doorName: "3", in: 0, out: 0 },
-      ],
-      feedPublisherId: "fi:kuopio",
-      routeId: "4",
-      startDate: "2022-11-02",
-      startTime: "18:03:00",
-      stopId: "201548",
-      stopSequence: 23,
+      schemaVersion: "1-0-0",
+      authorityId: "221",
       timezoneName: "Europe/Helsinki",
-      tripId: "Talvikausi_Koulp_4_0_180300_183700_1",
+      gtfsrtTripId: "Talvikausi_Koulp_4_0_180300_183700_1",
+      gtfsrtStartDate: "2022-11-02",
+      gtfsrtStartTime: "18:03:00",
+      gtfsrtRouteId: "4",
+      gtfsrtDirectionId: 0,
+      gtfsrtCurrentStopSequence: 23,
+      gtfsrtStopId: "201548",
+      gtfsrtVehicleId: "44517_160",
+      utcStartTime: "2022-11-02T16:03:00Z",
+      countingDeviceId: "device1",
+      countingVendorName: "Vendor1",
+      countQuality: matchedApc.CountQuality.Regular,
+      doorClassCounts: [
+        {
+          countClass: matchedApc.CountClass.Adult,
+          doorName: "1",
+          in: 2,
+          out: 0,
+        },
+        {
+          countClass: matchedApc.CountClass.Adult,
+          doorName: "2",
+          in: 0,
+          out: 0,
+        },
+        {
+          countClass: matchedApc.CountClass.Adult,
+          doorName: "3",
+          in: 0,
+          out: 0,
+        },
+      ],
     },
     eventTimestamp: 1667413927456,
   });
