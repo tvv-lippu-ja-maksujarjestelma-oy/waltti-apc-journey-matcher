@@ -106,12 +106,12 @@ const exitGracefully = async (
  */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 (async () => {
-  const serviceName = "waltti-apc-journey-matcher";
   /* eslint-enable @typescript-eslint/no-floating-promises */
+  const serviceName = "waltti-apc-journey-matcher";
   try {
     const logger = pino(
       {
-        name: "waltti-apc-journey-matcher",
+        name: serviceName,
         timestamp: pino.stdTimeFunctions.isoTime,
         // As logger is started before config is created, read the level from
         // env.
