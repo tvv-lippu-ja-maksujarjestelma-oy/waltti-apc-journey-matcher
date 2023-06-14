@@ -55,7 +55,7 @@
     "typescript": "^4.5.5"
   },
   "dependencies": {
-    "pino": "^8.5.0",
+    "pino": "^8.14.1",
     "protobufjs": "^7.0.0",
     "pulsar-client": "^1.8.2"
   },
