@@ -147,6 +147,7 @@ const formMatchedApcMessage = (
   );
   return {
     data: encoded,
+    properties: { topicSuffix: vehicleJourney.authorityId },
     eventTimestamp: oneVendorApc.eventTimestamp,
   };
 };
