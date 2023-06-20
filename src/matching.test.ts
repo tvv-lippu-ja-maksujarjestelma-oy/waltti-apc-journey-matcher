@@ -2,6 +2,7 @@ import pino from "pino";
 import Pulsar from "pulsar-client";
 import type { CountingSystemMap, ProcessingConfig } from "./config";
 import {
+  calculateUtcStartTime,
   extractVehiclesFromCountingSystemMap,
   getCountingSystemIdFromMqttTopic,
   getUniqueVehicleId,
@@ -21,6 +22,16 @@ test("Extracting vehicles from a valid counting system map succeeds", () => {
   expect(extractVehiclesFromCountingSystemMap(countingSystemMap)).toStrictEqual(
     uniqueVehicleIds
   );
+});
+
+test("Calculating UTC start time from GTFS start during DST change succeeds", () => {
+  const startDate = "20221030";
+  const startTime = "01:31:23";
+  const timezoneName = "Europe/Helsinki";
+  const expected = "2022-10-29T23:31:23Z";
+  expect(
+    calculateUtcStartTime(startDate, startTime, timezoneName)
+  ).toStrictEqual(expected);
 });
 
 test("Extracting countingSystemId from a valid MQTT topic succeeds", () => {
