@@ -14,11 +14,14 @@ import * as stringentApc from "./quicktype/stringentApc";
 
 test("Extracting vehicles from a valid counting system map succeeds", () => {
   const countingSystemMap: CountingSystemMap = new Map([
-    ["CountingSystemFoo", ["VehicleBar", "VendorBaz"]],
-    ["CountingSystem2", ["Vehicle2", "Vendor2"]],
-    ["CountingSystem3", ["VehicleBar", "Vendor2"]],
+    ["CountingSystemFoo", ["Authority2:VehicleBar", "VendorBaz"]],
+    ["CountingSystem2", ["Authority5:Vehicle2", "Vendor2"]],
+    ["CountingSystem3", ["Authority2:VehicleBar", "Vendor2"]],
   ]);
-  const uniqueVehicleIds = new Set(["VehicleBar", "Vehicle2"]);
+  const uniqueVehicleIds = new Set([
+    "Authority2:VehicleBar",
+    "Authority5:Vehicle2",
+  ]);
   expect(extractVehiclesFromCountingSystemMap(countingSystemMap)).toStrictEqual(
     uniqueVehicleIds
   );
