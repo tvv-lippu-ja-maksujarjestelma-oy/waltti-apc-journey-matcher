@@ -196,11 +196,11 @@ test("Match with results of initializeMatching", (done) => {
     feedMap: new Map([
       [
         "persistent://tenant/namespace/gtfs-realtime-vp-fi-kuopio",
-        ["fi:kuopio", "Europe/Helsinki"],
+        ["fi:kuopio", "221", "Europe/Helsinki"],
       ],
       [
         "persistent://tenant/namespace/gtfs-realtime-vp-fi-jyvaskyla",
-        ["fi:jyvaskyla", "Europe/Helsinki"],
+        ["fi:jyvaskyla", "209", "Europe/Helsinki"],
       ],
     ]),
   };
