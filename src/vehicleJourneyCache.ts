@@ -4,6 +4,7 @@ import type { transit_realtime } from "./protobuf/gtfsRealtime";
 type VehicleJourneyKey = UniqueVehicleId;
 
 export interface VehicleJourney {
+  authorityId: string;
   directionId: number;
   feedPublisherId: string;
   routeId: string;
@@ -13,6 +14,7 @@ export interface VehicleJourney {
   stopSequence: number;
   timezoneName: string;
   tripId: string;
+  vehicleId: string;
 }
 
 type VehicleJourneyCache = Map<VehicleJourneyKey, VehicleJourney>;
@@ -34,11 +36,17 @@ export const formVehicleJourney = (
   entity: transit_realtime.IFeedEntity,
   {
     feedPublisherId,
+    walttiAuthorityId,
     timezoneName,
-  }: { feedPublisherId: string; timezoneName: string }
+  }: {
+    feedPublisherId: string;
+    walttiAuthorityId: string;
+    timezoneName: string;
+  }
 ): VehicleJourney | undefined => {
   let result;
   const { vehicle } = entity;
+  const authorityId = walttiAuthorityId;
   const trip = vehicle?.trip;
   const directionId = trip?.directionId;
   const routeId = trip?.routeId;
@@ -47,6 +55,7 @@ export const formVehicleJourney = (
   const stopId = vehicle?.stopId;
   const stopSequence = vehicle?.currentStopSequence;
   const tripId = trip?.tripId;
+  const vehicleId = vehicle?.vehicle?.id;
   if (
     directionId != null &&
     routeId != null &&
@@ -54,9 +63,11 @@ export const formVehicleJourney = (
     startTime != null &&
     stopId != null &&
     stopSequence != null &&
-    tripId != null
+    tripId != null &&
+    vehicleId != null
   ) {
     result = {
+      authorityId,
       directionId,
       feedPublisherId,
       routeId,
@@ -66,6 +77,7 @@ export const formVehicleJourney = (
       stopSequence,
       timezoneName,
       tripId,
+      vehicleId,
     };
   }
   return result;
