@@ -177,7 +177,7 @@ test("Match with results of initializeMatching", (done) => {
     {
       name: "tester",
       timestamp: pino.stdTimeFunctions.isoTime,
-      level: "debug",
+      level: "info",
     },
     pino.destination({ sync: true })
   );
