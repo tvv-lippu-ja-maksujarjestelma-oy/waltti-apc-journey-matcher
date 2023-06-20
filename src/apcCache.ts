@@ -1,10 +1,15 @@
 import type pino from "pino";
-import type { CountingVendorName, UniqueVehicleId } from "./config";
+import type {
+  CountingDeviceId,
+  CountingVendorName,
+  UniqueVehicleId,
+} from "./config";
 import * as stringentApc from "./quicktype/stringentApc";
 
 export type ApcCacheKey = UniqueVehicleId;
 export interface ApcCacheValueElement {
   vehicleCounts: stringentApc.Vehiclecounts;
+  countingDeviceId: CountingDeviceId;
   countingVendorName: CountingVendorName;
   eventTimestamp: number;
 }
@@ -104,8 +109,11 @@ export const sumApcCacheValueElements = (
   newValue: ApcCacheValueElement
 ): ApcCacheValueElement => {
   // Retain only the latest timestamp.
-  const { countingVendorName, eventTimestamp } = newValue;
-  if (countingVendorName !== oldValue.countingVendorName) {
+  const { countingDeviceId, countingVendorName, eventTimestamp } = newValue;
+  if (
+    countingVendorName !== oldValue.countingVendorName ||
+    countingDeviceId !== oldValue.countingDeviceId
+  ) {
     logger.fatal(
       {
         oldCountingVendorName: oldValue.countingVendorName,
@@ -117,12 +125,25 @@ export const sumApcCacheValueElements = (
       `Old and new countingVendorName should be identical. Instead old value is ${oldValue.countingVendorName} and new value is ${countingVendorName}.`
     );
   }
+  if (countingDeviceId !== oldValue.countingDeviceId) {
+    logger.fatal(
+      {
+        oldCountingDeviceId: oldValue.countingDeviceId,
+        countingDeviceId,
+      },
+      "Old and new countingDeviceId should be identical"
+    );
+    throw new Error(
+      `Old and new countingDeviceId should be identical. Instead old value is ${oldValue.countingDeviceId} and new value is ${countingDeviceId}.`
+    );
+  }
   const vehicleCounts = sumVehicleCounts(
     oldValue.vehicleCounts,
     newValue.vehicleCounts
   );
   return {
     vehicleCounts,
+    countingDeviceId,
     countingVendorName,
     eventTimestamp,
   };

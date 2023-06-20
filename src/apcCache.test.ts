@@ -260,9 +260,10 @@ test("Add several vendors for one vehicle into APC cache", () => {
     pino.destination({ sync: true })
   );
   const { get, add, remove } = createApcCache(logger);
-  const vehicle1 = "Vehicle1";
+  const vehicle1 = "Authority1:Vehicle1";
   expect(get(vehicle1)).toBeUndefined();
   add(vehicle1, {
+    countingDeviceId: "Device1",
     countingVendorName: "Vendor1",
     eventTimestamp: 123,
     vehicleCounts: {
@@ -277,6 +278,7 @@ test("Add several vendors for one vehicle into APC cache", () => {
   });
   expect(get(vehicle1)).toHaveLength(1);
   add(vehicle1, {
+    countingDeviceId: "SomeDevice3",
     countingVendorName: "Vendor2",
     eventTimestamp: 124,
     vehicleCounts: {
