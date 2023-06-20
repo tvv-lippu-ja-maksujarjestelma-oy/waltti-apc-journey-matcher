@@ -157,12 +157,15 @@ const mockGtfsrtMessage = ({
 };
 
 const mockMatchedApcPulsarProducerMessage = ({
+  properties,
   content,
   eventTimestamp,
 }: {
+  properties: { [key: string]: string };
   content: matchedApc.MatchedApc;
   eventTimestamp: number;
 }): Pulsar.ProducerMessage => ({
+  properties,
   data: Buffer.from(matchedApc.Convert.matchedApcToJson(content), "utf8"),
   eventTimestamp,
 });
@@ -365,6 +368,7 @@ test("Match with results of initializeMatching", (done) => {
     eventTimestamp: 1667413939023,
   });
   const expectedApcMessage = mockMatchedApcPulsarProducerMessage({
+    properties: { topicSuffix: "221" },
     content: {
       schemaVersion: "1-0-0",
       authorityId: "221",
