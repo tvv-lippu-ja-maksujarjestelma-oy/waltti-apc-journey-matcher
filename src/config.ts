@@ -5,7 +5,15 @@ import type { Apc } from "./quicktype/stringentApc";
 
 export type CountingSystemId = NonNullable<Apc["countingSystemId"]>;
 
-export type UniqueVehicleId = string;
+export type FeedPublisherId = string;
+
+export type WalttiAuthorityId = string;
+
+export type VehicleId = string;
+
+export type UniqueVehicleId = `${FeedPublisherId}:${VehicleId}`;
+
+export type CountingDeviceId = MatchedApc["countingDeviceId"];
 
 export type CountingVendorName = MatchedApc["countingVendorName"];
 
@@ -14,11 +22,12 @@ export type CountingSystemMap = Map<
   [UniqueVehicleId, CountingVendorName]
 >;
 
-export type FeedPublisherId = string;
-
 export type TimezoneName = string;
 
-export type FeedMap = Map<string, [FeedPublisherId, TimezoneName]>;
+export type FeedMap = Map<
+  string,
+  [FeedPublisherId, WalttiAuthorityId, TimezoneName]
+>;
 
 export interface ProcessingConfig {
   apcWaitInSeconds: number;
@@ -95,6 +104,39 @@ const getOptionalFiniteFloatWithDefault = (
   return result;
 };
 
+const getStringTripleMap = (
+  envVariable: string
+): Map<string, [string, string, string]> => {
+  // Check the contents below. Crashing here is fine, too.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const keyValueList = JSON.parse(getRequired(envVariable));
+  if (!Array.isArray(keyValueList)) {
+    throw new Error(`${envVariable} must be a an array`);
+  }
+  const map = new Map<string, [string, string, string]>(keyValueList);
+  if (map.size < 1) {
+    throw new Error(
+      `${envVariable} must have at least one array entry in the form of [string, [string, string, string]].`
+    );
+  }
+  if (map.size !== keyValueList.length) {
+    throw new Error(`${envVariable} must have each key only once.`);
+  }
+  if (
+    Array.from(map.values()).some(
+      (triple) => !Array.isArray(triple) || triple.length !== 3
+    ) ||
+    Array.from(map.entries())
+      .flat(2)
+      .some((x) => typeof x !== "string")
+  ) {
+    throw new Error(
+      `${envVariable} must contain only strings in the form of [string, [string, string, string]].`
+    );
+  }
+  return map;
+};
+
 const getStringPairMap = (
   envVariable: string
 ): Map<string, [string, string]> => {
@@ -128,13 +170,30 @@ const getStringPairMap = (
   return map;
 };
 
+const getCountingSystemMap = (envVariable: string): CountingSystemMap => {
+  const pairMap = getStringPairMap(envVariable);
+  Array.from(pairMap.values()).forEach((pair) => {
+    const parts = pair[0].split(":");
+    if (
+      parts.length < 2 ||
+      parts.slice(0, -1).join("").length < 1 ||
+      parts.slice(-1).join("").length < 1
+    ) {
+      throw new Error(
+        `${envVariable} must have a colon separating non-empty strings in the form of [string, [string:string, string]].`
+      );
+    }
+  });
+  return pairMap as CountingSystemMap;
+};
+
 const getProcessingConfig = () => {
   const apcWaitInSeconds = getOptionalFiniteFloatWithDefault(
     "APC_WAIT_IN_SECONDS",
     6
   );
-  const countingSystemMap = getStringPairMap("COUNTING_SYSTEM_MAP");
-  const feedMap = getStringPairMap("FEED_MAP");
+  const countingSystemMap = getCountingSystemMap("COUNTING_SYSTEM_MAP");
+  const feedMap = getStringTripleMap("FEED_MAP");
   return {
     apcWaitInSeconds,
     countingSystemMap,
