@@ -1,3 +1,5 @@
+import { add, intervalToDuration, sub } from "date-fns";
+import { zonedTimeToUtc } from "date-fns-tz";
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import { ApcCacheValueElement, createApcCache } from "./apcCache";
@@ -69,6 +71,25 @@ const flattenCounts = (
     // Telia might send an integer.
     doorName: doorCounts.door.toString(),
   }));
+
+export const formatDateToZuluWithoutMilliseconds = (date: Date): string =>
+  `${date.toISOString().slice(0, 19)}Z`;
+
+export const calculateUtcStartTime = (
+  startDate: string,
+  startTime: string,
+  timezoneName: string
+) => {
+  const [hours, minutes, seconds] = startTime.split(":").map(Number);
+  const totalSeconds =
+    (hours ?? 0) * 3600 + (minutes ?? 0) * 60 + (seconds ?? 0);
+  const duration = intervalToDuration({ start: 0, end: 1_000 * totalSeconds });
+  const utcStartTime = sub(
+    add(zonedTimeToUtc(`${startDate}T12:00:00`, timezoneName), duration),
+    intervalToDuration({ start: 0, end: 12 * 60 * 60 * 1_000 })
+  );
+  return formatDateToZuluWithoutMilliseconds(utcStartTime);
+};
 
 const expandWithApc = (
   vehicleJourney: VehicleJourney,
