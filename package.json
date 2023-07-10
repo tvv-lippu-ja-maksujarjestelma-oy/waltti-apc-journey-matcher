@@ -59,7 +59,7 @@
     "date-fns-tz": "^2.0.0",
     "pino": "^8.14.1",
     "protobufjs": "^7.2.4",
-    "pulsar-client": "^1.8.2"
+    "pulsar-client": "^1.9.0"
   },
   "jest": {
     "preset": "ts-jest/presets/js-with-ts",
