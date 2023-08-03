@@ -2,6 +2,7 @@ import pino from "pino";
 import Pulsar from "pulsar-client";
 import type { CountingSystemMap, ProcessingConfig } from "./config";
 import {
+  calculateUtcStartTime,
   extractVehiclesFromCountingSystemMap,
   getCountingSystemIdFromMqttTopic,
   getUniqueVehicleId,
@@ -13,14 +14,27 @@ import * as stringentApc from "./quicktype/stringentApc";
 
 test("Extracting vehicles from a valid counting system map succeeds", () => {
   const countingSystemMap: CountingSystemMap = new Map([
-    ["CountingSystemFoo", ["VehicleBar", "VendorBaz"]],
-    ["CountingSystem2", ["Vehicle2", "Vendor2"]],
-    ["CountingSystem3", ["VehicleBar", "Vendor2"]],
+    ["CountingSystemFoo", ["Authority2:VehicleBar", "VendorBaz"]],
+    ["CountingSystem2", ["Authority5:Vehicle2", "Vendor2"]],
+    ["CountingSystem3", ["Authority2:VehicleBar", "Vendor2"]],
   ]);
-  const uniqueVehicleIds = new Set(["VehicleBar", "Vehicle2"]);
+  const uniqueVehicleIds = new Set([
+    "Authority2:VehicleBar",
+    "Authority5:Vehicle2",
+  ]);
   expect(extractVehiclesFromCountingSystemMap(countingSystemMap)).toStrictEqual(
     uniqueVehicleIds
   );
+});
+
+test("Calculating UTC start time from GTFS start during DST change succeeds", () => {
+  const startDate = "20221030";
+  const startTime = "01:31:23";
+  const timezoneName = "Europe/Helsinki";
+  const expected = "2022-10-29T23:31:23Z";
+  expect(
+    calculateUtcStartTime(startDate, startTime, timezoneName)
+  ).toStrictEqual(expected);
 });
 
 test("Extracting countingSystemId from a valid MQTT topic succeeds", () => {
@@ -72,14 +86,20 @@ test("Getting the unique vehicle ID from a valid FeedEntity succeeds", () => {
 
 const mockPulsarMessage = ({
   topic,
+  properties,
   buffer,
   eventTimestamp,
 }: {
   topic: string;
+  properties: { [key: string]: string };
   buffer: Buffer;
   eventTimestamp: number;
 }): Pulsar.Message => {
   const message = Object.defineProperties(new Pulsar.Message(), {
+    getProperties: {
+      value: () => properties,
+      writable: true,
+    },
     getData: {
       value: () => buffer,
       writable: true,
@@ -96,12 +116,14 @@ const mockPulsarMessage = ({
   return message;
 };
 
-const mockApcMessage = ({
+const mockStringentApcMessage = ({
   topic,
+  properties,
   content,
   eventTimestamp,
 }: {
   topic: string;
+  properties: { [key: string]: string };
   content: stringentApc.StringentApcMessage;
   eventTimestamp: number;
 }): Pulsar.Message => {
@@ -109,7 +131,7 @@ const mockApcMessage = ({
     stringentApc.Convert.stringentApcMessageToJson(content),
     "utf8"
   );
-  return mockPulsarMessage({ topic, buffer, eventTimestamp });
+  return mockPulsarMessage({ topic, properties, buffer, eventTimestamp });
 };
 
 const mockGtfsrtMessage = ({
@@ -131,16 +153,19 @@ const mockGtfsrtMessage = ({
     ).finish()
   );
   transit_realtime.FeedMessage.decode(buffer);
-  return mockPulsarMessage({ topic, buffer, eventTimestamp });
+  return mockPulsarMessage({ topic, properties: {}, buffer, eventTimestamp });
 };
 
 const mockMatchedApcPulsarProducerMessage = ({
+  properties,
   content,
   eventTimestamp,
 }: {
+  properties: { [key: string]: string };
   content: matchedApc.MatchedApc;
   eventTimestamp: number;
 }): Pulsar.ProducerMessage => ({
+  properties,
   data: Buffer.from(matchedApc.Convert.matchedApcToJson(content), "utf8"),
   eventTimestamp,
 });
@@ -155,7 +180,7 @@ test("Match with results of initializeMatching", (done) => {
     {
       name: "tester",
       timestamp: pino.stdTimeFunctions.isoTime,
-      level: "debug",
+      level: "info",
     },
     pino.destination({ sync: true })
   );
@@ -174,16 +199,19 @@ test("Match with results of initializeMatching", (done) => {
     feedMap: new Map([
       [
         "persistent://tenant/namespace/gtfs-realtime-vp-fi-kuopio",
-        ["fi:kuopio", "Europe/Helsinki"],
+        ["fi:kuopio", "221", "Europe/Helsinki"],
       ],
       [
         "persistent://tenant/namespace/gtfs-realtime-vp-fi-jyvaskyla",
-        ["fi:jyvaskyla", "Europe/Helsinki"],
+        ["fi:jyvaskyla", "209", "Europe/Helsinki"],
       ],
     ]),
   };
-  const apcMessage1 = mockApcMessage({
+  const apcMessage1 = mockStringentApcMessage({
     topic: "persistent://tenant/namespace/apc",
+    properties: {
+      mqttTopic: "apc-from-vehicle/v1/fi/waltti/Vendor1/device1",
+    },
     content: {
       APC: {
         countingSystemId: "device1",
@@ -211,8 +239,11 @@ test("Match with results of initializeMatching", (done) => {
     },
     eventTimestamp: 1667413923789,
   });
-  const apcMessage2 = mockApcMessage({
+  const apcMessage2 = mockStringentApcMessage({
     topic: "persistent://tenant/namespace/apc",
+    properties: {
+      mqttTopic: "apc-from-vehicle/v1/fi/waltti/Vendor1/device1",
+    },
     content: {
       APC: {
         countingSystemId: "device1",
@@ -337,23 +368,43 @@ test("Match with results of initializeMatching", (done) => {
     eventTimestamp: 1667413939023,
   });
   const expectedApcMessage = mockMatchedApcPulsarProducerMessage({
+    properties: { topicSuffix: "221" },
     content: {
-      countQuality: "regular",
-      countingVendorName: "Vendor1",
-      directionId: 0,
-      doorClassCounts: [
-        { countClass: "adult", doorName: "1", in: 2, out: 0 },
-        { countClass: "adult", doorName: "2", in: 0, out: 0 },
-        { countClass: "adult", doorName: "3", in: 0, out: 0 },
-      ],
-      feedPublisherId: "fi:kuopio",
-      routeId: "4",
-      startDate: "2022-11-02",
-      startTime: "18:03:00",
-      stopId: "201548",
-      stopSequence: 23,
+      schemaVersion: "1-0-0",
+      authorityId: "221",
       timezoneName: "Europe/Helsinki",
-      tripId: "Talvikausi_Koulp_4_0_180300_183700_1",
+      gtfsrtTripId: "Talvikausi_Koulp_4_0_180300_183700_1",
+      gtfsrtStartDate: "2022-11-02",
+      gtfsrtStartTime: "18:03:00",
+      gtfsrtRouteId: "4",
+      gtfsrtDirectionId: 0,
+      gtfsrtCurrentStopSequence: 23,
+      gtfsrtStopId: "201548",
+      gtfsrtVehicleId: "44517_160",
+      utcStartTime: "2022-11-02T16:03:00Z",
+      countingDeviceId: "device1",
+      countingVendorName: "Vendor1",
+      countQuality: matchedApc.CountQuality.Regular,
+      doorClassCounts: [
+        {
+          countClass: matchedApc.CountClass.Adult,
+          doorName: "1",
+          in: 2,
+          out: 0,
+        },
+        {
+          countClass: matchedApc.CountClass.Adult,
+          doorName: "2",
+          in: 0,
+          out: 0,
+        },
+        {
+          countClass: matchedApc.CountClass.Adult,
+          doorName: "3",
+          in: 0,
+          out: 0,
+        },
+      ],
     },
     eventTimestamp: 1667413927456,
   });

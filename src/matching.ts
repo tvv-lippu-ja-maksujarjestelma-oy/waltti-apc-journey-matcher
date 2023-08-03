@@ -1,3 +1,5 @@
+import { add, intervalToDuration, sub } from "date-fns";
+import { zonedTimeToUtc } from "date-fns-tz";
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import { ApcCacheValueElement, createApcCache } from "./apcCache";
@@ -5,8 +7,10 @@ import type {
   CountingSystemId,
   CountingSystemMap,
   FeedMap,
+  FeedPublisherId,
   ProcessingConfig,
   UniqueVehicleId,
+  WalttiAuthorityId,
 } from "./config";
 import { transit_realtime } from "./protobuf/gtfsRealtime";
 import * as stringentApc from "./quicktype/stringentApc";
@@ -30,13 +34,20 @@ export const extractVehiclesFromCountingSystemMap = (
 export const getFeedDetails = (
   feedMap: FeedMap,
   topic: string
-): { feedPublisherId: string; timezoneName: string } | undefined => {
+):
+  | {
+      feedPublisherId: FeedPublisherId;
+      walttiAuthorityId: WalttiAuthorityId;
+      timezoneName: string;
+    }
+  | undefined => {
   let result;
   const feedDetails = feedMap.get(topic);
   if (feedDetails !== undefined) {
     result = {
       feedPublisherId: feedDetails[0],
-      timezoneName: feedDetails[1],
+      walttiAuthorityId: feedDetails[1],
+      timezoneName: feedDetails[2],
     };
   }
   return result;
@@ -45,8 +56,8 @@ export const getFeedDetails = (
 export const getUniqueVehicleId = (
   entity: transit_realtime.IFeedEntity,
   feedPublisherId: string
-): string | undefined => {
-  let result;
+): UniqueVehicleId | undefined => {
+  let result: UniqueVehicleId | undefined;
   const vehicleId = entity.vehicle?.vehicle?.id;
   if (vehicleId != null) {
     result = `${feedPublisherId}:${vehicleId}`;
@@ -63,29 +74,66 @@ const flattenCounts = (
   doorCounts: stringentApc.Doorcount
 ): matchedApc.DoorClassCount[] =>
   doorCounts.count.map((currentCount) => ({
-    countClass: currentCount.class,
+    // FIXME: no any
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    countClass: currentCount.class as any,
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-enable @typescript-eslint/no-explicit-any */
     in: currentCount.in,
     out: currentCount.out,
     // Telia might send an integer.
     doorName: doorCounts.door.toString(),
   }));
 
+export const formatDateToZuluWithoutMilliseconds = (date: Date): string =>
+  `${date.toISOString().slice(0, 19)}Z`;
+
+export const calculateUtcStartTime = (
+  startDate: string,
+  startTime: string,
+  timezoneName: string
+) => {
+  const [hours, minutes, seconds] = startTime.split(":").map(Number);
+  const totalSeconds =
+    (hours ?? 0) * 3600 + (minutes ?? 0) * 60 + (seconds ?? 0);
+  const duration = intervalToDuration({ start: 0, end: 1_000 * totalSeconds });
+  const utcStartTime = sub(
+    add(zonedTimeToUtc(`${startDate}T12:00:00`, timezoneName), duration),
+    intervalToDuration({ start: 0, end: 12 * 60 * 60 * 1_000 })
+  );
+  return formatDateToZuluWithoutMilliseconds(utcStartTime);
+};
+
 const expandWithApc = (
   vehicleJourney: VehicleJourney,
   oneVendorApc: ApcCacheValueElement
 ): matchedApc.MatchedApc => ({
-  countQuality: oneVendorApc.vehicleCounts.countquality,
+  authorityId: vehicleJourney.authorityId,
+  // FIXME: no any
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  countQuality: oneVendorApc.vehicleCounts.countquality as any,
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  countingDeviceId: oneVendorApc.countingDeviceId,
   countingVendorName: oneVendorApc.countingVendorName,
-  directionId: vehicleJourney.directionId,
   doorClassCounts: oneVendorApc.vehicleCounts.doorcounts.flatMap(flattenCounts),
-  feedPublisherId: vehicleJourney.feedPublisherId,
-  routeId: vehicleJourney.routeId,
-  startDate: vehicleJourney.startDate,
-  startTime: vehicleJourney.startTime,
-  stopId: vehicleJourney.stopId,
-  stopSequence: vehicleJourney.stopSequence,
+  gtfsrtCurrentStopSequence: vehicleJourney.stopSequence,
+  gtfsrtDirectionId: vehicleJourney.directionId,
+  gtfsrtRouteId: vehicleJourney.routeId,
+  gtfsrtStartDate: vehicleJourney.startDate,
+  gtfsrtStartTime: vehicleJourney.startTime,
+  gtfsrtStopId: vehicleJourney.stopId,
+  gtfsrtTripId: vehicleJourney.tripId,
+  gtfsrtVehicleId: vehicleJourney.vehicleId,
+  schemaVersion: "1-0-0",
   timezoneName: vehicleJourney.timezoneName,
-  tripId: vehicleJourney.tripId,
+  utcStartTime: calculateUtcStartTime(
+    vehicleJourney.startDate,
+    vehicleJourney.startTime,
+    vehicleJourney.timezoneName
+  ),
 });
 
 const formMatchedApcMessage = (
@@ -99,6 +147,7 @@ const formMatchedApcMessage = (
   );
   return {
     data: encoded,
+    properties: { topicSuffix: vehicleJourney.authorityId },
     eventTimestamp: oneVendorApc.eventTimestamp,
   };
 };
@@ -157,6 +206,7 @@ export const initializeMatching = (
     const [uniqueVehicleId, countingVendorName] = countingSystemDetails;
     const apcCacheValue = {
       vehicleCounts: apcMessage.APC.vehiclecounts,
+      countingDeviceId: countingSystemId,
       countingVendorName,
       eventTimestamp: apcPulsarMessage.getEventTimestamp(),
     };
