@@ -14,3 +14,46 @@ updates:
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
+    groups:
+      date-fns:
+        patterns:
+          - "date-fns"
+          - "date-fns-tz"
+      eslint-config-airbnb:
+        patterns:
+          - "eslint-config-airbnb-base"
+          - "eslint-config-airbnb-typescript"
+      eslint-plugin-import:
+        patterns:
+          - "eslint-import-resolver-typescript"
+          - "eslint-plugin-import"
+      jest:
+        patterns:
+          - "@types/jest"
+          - "eslint-plugin-jest"
+          - "jest"
+          - "ts-jest"
+      libsodium-wrappers:
+        patterns:
+          - "@types/libsodium-wrappers"
+          - "libsodium-wrappers"
+      pg:
+        patterns:
+          - "@types/pg"
+          - "postgres-migrations"
+          - "pg"
+      prettier:
+        patterns:
+          - "eslint-config-prettier"
+          - "eslint-plugin-prettier"
+          - "prettier"
+      protobuf:
+        patterns:
+          - "protobufjs"
+          - "protobufjs-cli"
+      tsconfig:
+        patterns:
+          - "@tsconfig/*"
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
