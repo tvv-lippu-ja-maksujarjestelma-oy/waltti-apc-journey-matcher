@@ -150,7 +150,6 @@ const exitGracefully = async (
       logger.info(`Start service ${serviceName}`);
       logger.info("Read configuration");
       const config = getConfig(logger);
-      logger.info("Create mapping functions");
       logger.info("Create health check server");
       ({ closeHealthCheckServer, setHealthOk } = createHealthCheckServer(
         config.healthCheck
