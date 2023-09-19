@@ -293,7 +293,7 @@ export const initializeMatching = (
           }
           if (
             entity.vehicle?.trip?.tripId !== cachedVehicleJourney.tripId ||
-            currentStopSequence !== cachedVehicleJourney.stopSequence
+            currentStopSequence > cachedVehicleJourney.stopSequence
           ) {
             logger.debug(
               {
