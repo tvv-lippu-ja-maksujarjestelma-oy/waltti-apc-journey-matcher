@@ -55,8 +55,8 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
-    "date-fns": "^2.30.0",
-    "date-fns-tz": "^2.0.0",
+    "date-fns": "^3.4.0",
+    "date-fns-tz": "^2.0.1",
     "pino": "^8.16.2",
     "protobufjs": "^7.2.6",
     "pulsar-client": "^1.10.0"
