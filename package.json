@@ -52,7 +52,7 @@
     "protobufjs-cli": "^1.1.2",
     "quicktype": "^23.0.170",
     "ts-jest": "^29.2.0",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.3"
   },
   "dependencies": {
     "date-fns": "^2.30.0",
