@@ -35,7 +35,7 @@
   "homepage": "https://github.com/tvv-lippu-ja-maksujarjestelma-oy/waltti-apc-journey-matcher#readme",
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
-    "@types/jest": "^29.5.13",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.7.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
