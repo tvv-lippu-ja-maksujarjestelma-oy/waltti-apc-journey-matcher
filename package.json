@@ -58,7 +58,7 @@
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "pino": "^8.16.2",
-    "protobufjs": "^7.5.3",
+    "protobufjs": "^7.5.4",
     "pulsar-client": "^1.14.0"
   },
   "jest": {
