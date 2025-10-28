@@ -117,12 +117,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    FeedMessage.decode = function decode(reader, length) {
+    FeedMessage.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.FeedMessage();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.header = $root.transit_realtime.FeedHeader.decode(
@@ -403,12 +404,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    FeedHeader.decode = function decode(reader, length) {
+    FeedHeader.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.FeedHeader();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.gtfsRealtimeVersion = reader.string();
@@ -782,12 +784,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    FeedEntity.decode = function decode(reader, length) {
+    FeedEntity.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.FeedEntity();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.id = reader.string();
@@ -1135,12 +1138,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    TripUpdate.decode = function decode(reader, length) {
+    TripUpdate.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.TripUpdate();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.trip = $root.transit_realtime.TripDescriptor.decode(
@@ -1522,12 +1526,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
        * @throws {Error} If the payload is not a reader or valid buffer
        * @throws {$protobuf.util.ProtocolError} If required fields are missing
        */
-      StopTimeEvent.decode = function decode(reader, length) {
+      StopTimeEvent.decode = function decode(reader, length, error) {
         if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
         let end = length === undefined ? reader.len : reader.pos + length,
           message = new $root.transit_realtime.TripUpdate.StopTimeEvent();
         while (reader.pos < end) {
           let tag = reader.uint32();
+          if (tag === error) break;
           switch (tag >>> 3) {
             case 1: {
               message.delay = reader.int32();
@@ -1856,12 +1861,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
        * @throws {Error} If the payload is not a reader or valid buffer
        * @throws {$protobuf.util.ProtocolError} If required fields are missing
        */
-      StopTimeUpdate.decode = function decode(reader, length) {
+      StopTimeUpdate.decode = function decode(reader, length, error) {
         if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
         let end = length === undefined ? reader.len : reader.pos + length,
           message = new $root.transit_realtime.TripUpdate.StopTimeUpdate();
         while (reader.pos < end) {
           let tag = reader.uint32();
+          if (tag === error) break;
           switch (tag >>> 3) {
             case 1: {
               message.stopSequence = reader.uint32();
@@ -2336,12 +2342,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    VehiclePosition.decode = function decode(reader, length) {
+    VehiclePosition.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.VehiclePosition();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.trip = $root.transit_realtime.TripDescriptor.decode(
@@ -3025,12 +3032,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Alert.decode = function decode(reader, length) {
+    Alert.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.Alert();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             if (!(message.activePeriod && message.activePeriod.length))
@@ -3633,12 +3641,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    TimeRange.decode = function decode(reader, length) {
+    TimeRange.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.TimeRange();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.start = reader.uint64();
@@ -3963,12 +3972,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Position.decode = function decode(reader, length) {
+    Position.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.Position();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.latitude = reader.float();
@@ -4300,12 +4310,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    TripDescriptor.decode = function decode(reader, length) {
+    TripDescriptor.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.TripDescriptor();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.tripId = reader.string();
@@ -4647,12 +4658,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    VehicleDescriptor.decode = function decode(reader, length) {
+    VehicleDescriptor.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.VehicleDescriptor();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.id = reader.string();
@@ -4931,12 +4943,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    EntitySelector.decode = function decode(reader, length) {
+    EntitySelector.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.EntitySelector();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             message.agencyId = reader.string();
@@ -5194,12 +5207,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    TranslatedString.decode = function decode(reader, length) {
+    TranslatedString.decode = function decode(reader, length, error) {
       if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
       let end = length === undefined ? reader.len : reader.pos + length,
         message = new $root.transit_realtime.TranslatedString();
       while (reader.pos < end) {
         let tag = reader.uint32();
+        if (tag === error) break;
         switch (tag >>> 3) {
           case 1: {
             if (!(message.translation && message.translation.length))
@@ -5442,12 +5456,13 @@ export const transit_realtime = ($root.transit_realtime = (() => {
        * @throws {Error} If the payload is not a reader or valid buffer
        * @throws {$protobuf.util.ProtocolError} If required fields are missing
        */
-      Translation.decode = function decode(reader, length) {
+      Translation.decode = function decode(reader, length, error) {
         if (!(reader instanceof $Reader)) reader = $Reader.create(reader);
         let end = length === undefined ? reader.len : reader.pos + length,
           message = new $root.transit_realtime.TranslatedString.Translation();
         while (reader.pos < end) {
           let tag = reader.uint32();
+          if (tag === error) break;
           switch (tag >>> 3) {
             case 1: {
               message.text = reader.string();

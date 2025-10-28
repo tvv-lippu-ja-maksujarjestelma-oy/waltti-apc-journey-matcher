@@ -2,11 +2,13 @@ import Pulsar from "pulsar-client";
 import type { PulsarConfig } from "./config";
 
 export const createPulsarClient = ({
-  oauth2Config,
   clientConfig,
+  oauth2Config,
 }: PulsarConfig) => {
-  const authentication = new Pulsar.AuthenticationOauth2(oauth2Config);
-  const client = new Pulsar.Client({ ...clientConfig, authentication });
+  const authOpts = oauth2Config
+    ? { authentication: new Pulsar.AuthenticationOauth2(oauth2Config) }
+    : {};
+  const client = new Pulsar.Client({ ...clientConfig, ...authOpts });
   if (clientConfig.log) {
     Pulsar.Client.setLogHandler(clientConfig.log);
   }
