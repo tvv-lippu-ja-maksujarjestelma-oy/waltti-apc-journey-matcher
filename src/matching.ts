@@ -198,7 +198,11 @@ export const initializeMatching = (
     const countingSystemDetails = countingSystemMap.get(countingSystemId);
     if (countingSystemDetails === undefined) {
       logger.error(
-        { apcMessage: JSON.stringify(apcMessage), countingSystemMap },
+        {
+          apcMessage: JSON.stringify(apcMessage),
+          countingSystemMap: JSON.stringify(countingSystemMap),
+          countingSystemId,
+        },
         "countingSystemId could not be found from countingSystemMap. Try adding the missing countingSystemId into the configuration."
       );
       return;
