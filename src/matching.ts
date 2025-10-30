@@ -200,13 +200,20 @@ export const initializeMatching = (
       logger.error(
         {
           apcMessage: JSON.stringify(apcMessage),
-          countingSystemMap: JSON.stringify(countingSystemMap),
+          countingSystemMapEntries: Array.from(countingSystemMap.entries()),
+          countingSystemMapObject: Object.fromEntries(countingSystemMap),
+          countingSystemMapKeys: Array.from(countingSystemMap.keys()),
           countingSystemId,
         },
         "countingSystemId could not be found from countingSystemMap. Try adding the missing countingSystemId into the configuration."
       );
       return;
     }
+    logger.debug(
+      { countingSystemId, countingSystemDetails },
+      "countingSystemDetails found in countingSystemMap"
+    );
+
     const [uniqueVehicleId, countingVendorName] = countingSystemDetails;
     const apcCacheValue = {
       vehicleCounts: apcMessage.APC.vehiclecounts,
@@ -333,6 +340,11 @@ export const initializeMatching = (
                 // The sent messages might not have been acked yet by the
                 // cluster.
                 apcCache.remove(uniqueVehicleId);
+              } else {
+                logger.debug(
+                  { uniqueVehicleId, apcCache: JSON.stringify(apcCache) },
+                  "No APC cache value found for the vehicle"
+                );
               }
             });
             // We assume that the stopSequence will not change before the
