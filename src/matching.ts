@@ -199,7 +199,9 @@ export const initializeMatching = (
       return;
     }
     // Normalize to lowercase for case-insensitive matching
-    const countingSystemDetails = countingSystemMap.get(countingSystemId.toLowerCase());
+    const countingSystemDetails = countingSystemMap.get(
+      countingSystemId.toLowerCase()
+    );
     if (countingSystemDetails === undefined) {
       logger.error(
         {
