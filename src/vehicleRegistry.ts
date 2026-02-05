@@ -153,13 +153,13 @@ export const createVehicleRegistryHandler = (
 /**
  * Run the vehicle registry update loop: receive messages and update the counting system map.
  */
-export const keepUpdatingVehicleRegistry = async (
+export const keepUpdatingVehicleRegistry = (
   logger: pino.Logger,
   update: (message: Pulsar.Message) => void,
   vehicleRegistryConsumer: Pulsar.Consumer
 ): Promise<void> => {
   logger.info("Starting vehicle registry update loop");
-  for (;;) {
+  const processNext = async (): Promise<void> => {
     logger.debug("Waiting for next vehicle registry message...");
     const message = await vehicleRegistryConsumer.receive();
     logger.info(
@@ -171,6 +171,10 @@ export const keepUpdatingVehicleRegistry = async (
       "Received vehicle registry message"
     );
     update(message);
-    vehicleRegistryConsumer.acknowledge(message);
-  }
+    await vehicleRegistryConsumer.acknowledge(message);
+    processNext().catch(() => {
+      // Recursive call: ignore rejection to keep loop running
+    });
+  };
+  return processNext();
 };

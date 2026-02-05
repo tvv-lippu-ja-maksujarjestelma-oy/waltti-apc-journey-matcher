@@ -156,7 +156,7 @@ const getOptionalCountingSystemMap = (): {
     try {
       const keyValueList = JSON.parse(raw) as unknown;
       if (Array.isArray(keyValueList)) {
-        for (const entry of keyValueList) {
+        keyValueList.forEach((entry: unknown) => {
           if (
             Array.isArray(entry) &&
             entry.length === 2 &&
@@ -176,7 +176,7 @@ const getOptionalCountingSystemMap = (): {
               map.set(entry[0], [uniqueVehicleId as UniqueVehicleId, vendor]);
             }
           }
-        }
+        });
       }
     } catch {
       // Invalid: leave map empty
