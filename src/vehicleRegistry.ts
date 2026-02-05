@@ -13,7 +13,7 @@ import * as VehicleApcMapping from "./quicktype/vehicleApcMapping";
  */
 const getUniqueVehicleIdFromVehicleApcMapping = (
   vehicle: VehicleApcMapping.VehicleApcMapping,
-  feedPublisherId: string,
+  feedPublisherId: string
 ): UniqueVehicleId | undefined => {
   const { operatorId, vehicleShortName } = vehicle;
   if (operatorId != null && vehicleShortName != null) {
@@ -31,7 +31,7 @@ export const updateCountingSystemMapFromMessage = (
   message: Pulsar.Message,
   feedPublisherId: string,
   countingSystemMap: CountingSystemMap,
-  includedVehicles: Set<UniqueVehicleId>,
+  includedVehicles: Set<UniqueVehicleId>
 ): void => {
   const dataString = message.getData().toString("utf8");
 
@@ -45,7 +45,7 @@ export const updateCountingSystemMapFromMessage = (
         messageId: message.getMessageId().toString(),
         eventTimestamp: message.getEventTimestamp(),
       },
-      "Could not parse vehicle registry message",
+      "Could not parse vehicle registry message"
     );
     return;
   }
@@ -64,7 +64,7 @@ export const updateCountingSystemMapFromMessage = (
   vehicles.forEach((vehicle) => {
     const uniqueVehicleId = getUniqueVehicleIdFromVehicleApcMapping(
       vehicle,
-      feedPublisherId,
+      feedPublisherId
     );
 
     if (uniqueVehicleId == null) {
@@ -75,13 +75,13 @@ export const updateCountingSystemMapFromMessage = (
             vehicleShortName: vehicle.vehicleShortName,
           },
         },
-        "Could not construct uniqueVehicleId from vehicle",
+        "Could not construct uniqueVehicleId from vehicle"
       );
       return;
     }
 
     const passengerCounters = vehicle.equipment.filter(
-      (eq) => eq.type === "PASSENGER_COUNTER",
+      (eq) => eq.type === "PASSENGER_COUNTER"
     );
 
     passengerCounters.forEach((counter) => {
@@ -102,7 +102,7 @@ export const updateCountingSystemMapFromMessage = (
       entriesAdded: addedCount,
       mapSize: countingSystemMap.size,
     },
-    "Updated countingSystemMap from vehicle catalogue",
+    "Updated countingSystemMap from vehicle catalogue"
   );
 };
 
@@ -112,7 +112,7 @@ export const updateCountingSystemMapFromMessage = (
 export const createVehicleRegistryHandler = (
   logger: pino.Logger,
   countingSystemMap: CountingSystemMap,
-  includedVehicles: Set<UniqueVehicleId>,
+  includedVehicles: Set<UniqueVehicleId>
 ): { update: (message: Pulsar.Message) => void } => {
   const update = (message: Pulsar.Message): void => {
     const topic = message.getTopicName();
@@ -133,7 +133,7 @@ export const createVehicleRegistryHandler = (
     if (feedPublisherId == null) {
       logger.warn(
         { topic, topicName },
-        "Could not determine feedPublisherId from vehicle catalogue topic",
+        "Could not determine feedPublisherId from vehicle catalogue topic"
       );
       return;
     }
@@ -143,7 +143,7 @@ export const createVehicleRegistryHandler = (
       message,
       feedPublisherId,
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
   };
 
@@ -156,7 +156,7 @@ export const createVehicleRegistryHandler = (
 export const keepUpdatingVehicleRegistry = async (
   logger: pino.Logger,
   update: (message: Pulsar.Message) => void,
-  vehicleRegistryConsumer: Pulsar.Consumer,
+  vehicleRegistryConsumer: Pulsar.Consumer
 ): Promise<void> => {
   logger.info("Starting vehicle registry update loop");
   for (;;) {
@@ -168,7 +168,7 @@ export const keepUpdatingVehicleRegistry = async (
         eventTimestamp: message.getEventTimestamp(),
         topic: message.getTopicName(),
       },
-      "Received vehicle registry message",
+      "Received vehicle registry message"
     );
     update(message);
     vehicleRegistryConsumer.acknowledge(message);

@@ -73,18 +73,18 @@ const keepProcessingMessages = async (
   gtfsrtConsumer: Pulsar.Consumer,
   apcConsumer: Pulsar.Consumer,
   config: ProcessingConfig,
-  vehicleRegistryConsumer?: Pulsar.Consumer,
+  vehicleRegistryConsumer?: Pulsar.Consumer
 ): Promise<void> => {
   const { updateApcCache, expandWithApcAndSend } = initializeMatching(
     logger,
-    config,
+    config
   );
   const promises: Promise<void>[] = [
     keepReactingToGtfsrt(
       logger,
       producer,
       gtfsrtConsumer,
-      expandWithApcAndSend,
+      expandWithApcAndSend
     ),
     keepSummingApcValues(apcConsumer, updateApcCache),
   ];
@@ -92,14 +92,14 @@ const keepProcessingMessages = async (
     const { update } = createVehicleRegistryHandler(
       logger,
       config.countingSystemMap,
-      config.includedVehicles,
+      config.includedVehicles
     );
     promises.push(
-      keepUpdatingVehicleRegistry(logger, update, vehicleRegistryConsumer),
+      keepUpdatingVehicleRegistry(logger, update, vehicleRegistryConsumer)
     );
     logger.info(
       { initialMapSize: config.countingSystemMap.size },
-      "Vehicle registry consumer configured, countingSystemMap will be updated dynamically",
+      "Vehicle registry consumer configured, countingSystemMap will be updated dynamically"
     );
   }
   // We expect all promises to stay pending.

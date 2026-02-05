@@ -10,7 +10,7 @@ const logger = pino({ level: "silent" });
 
 const createMockMessage = (
   data: string,
-  topicName: string = "persistent://apc-sandbox/source/vehicle-catalogue-fi-jyvaskyla",
+  topicName: string = "persistent://apc-sandbox/source/vehicle-catalogue-fi-jyvaskyla"
 ): Pulsar.Message =>
   ({
     getData: () => Buffer.from(data, "utf8"),
@@ -18,7 +18,7 @@ const createMockMessage = (
     getMessageId: () => ({ toString: () => "mock-message-id" }),
     getEventTimestamp: () => Date.now(),
     getProperties: () => ({}),
-  }) as unknown as Pulsar.Message;
+  } as unknown as Pulsar.Message);
 
 describe("updateCountingSystemMapFromMessage", () => {
   test("adds single counting system to map and includedVehicles", () => {
@@ -29,7 +29,11 @@ describe("updateCountingSystemMapFromMessage", () => {
         operatorId: "6714",
         vehicleShortName: "518",
         equipment: [
-          { id: "JL518-0009d80670fc", type: "PASSENGER_COUNTER", apcSystem: "Telia" },
+          {
+            id: "JL518-0009d80670fc",
+            type: "PASSENGER_COUNTER",
+            apcSystem: "Telia",
+          },
         ],
       },
     ]);
@@ -40,7 +44,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.size).toBe(1);
@@ -48,9 +52,9 @@ describe("updateCountingSystemMapFromMessage", () => {
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)).toBe(
-      true,
-    );
+    expect(
+      includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
+    ).toBe(true);
   });
 
   test("adds all PASSENGER_COUNTER devices for one vehicle", () => {
@@ -61,8 +65,16 @@ describe("updateCountingSystemMapFromMessage", () => {
         operatorId: "6714",
         vehicleShortName: "520",
         equipment: [
-          { id: "JL520-device1", type: "PASSENGER_COUNTER", apcSystem: "VendorA" },
-          { id: "JL520-device2", type: "PASSENGER_COUNTER", apcSystem: "VendorB" },
+          {
+            id: "JL520-device1",
+            type: "PASSENGER_COUNTER",
+            apcSystem: "VendorA",
+          },
+          {
+            id: "JL520-device2",
+            type: "PASSENGER_COUNTER",
+            apcSystem: "VendorB",
+          },
         ],
       },
     ]);
@@ -73,7 +85,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.size).toBe(2);
@@ -86,9 +98,9 @@ describe("updateCountingSystemMapFromMessage", () => {
       "VendorB",
     ]);
     expect(includedVehicles.size).toBe(1);
-    expect(includedVehicles.has("fi:jyvaskyla:6714_520" as UniqueVehicleId)).toBe(
-      true,
-    );
+    expect(
+      includedVehicles.has("fi:jyvaskyla:6714_520" as UniqueVehicleId)
+    ).toBe(true);
   });
 
   test("uses unknown when apcSystem is missing", () => {
@@ -108,7 +120,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.get("JL521-APC")).toEqual([
@@ -137,7 +149,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.size).toBe(1);
@@ -165,7 +177,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.size).toBe(0);
@@ -186,7 +198,11 @@ describe("updateCountingSystemMapFromMessage", () => {
         operatorId: "6714",
         vehicleShortName: "518",
         equipment: [
-          { id: "JL518-0009d80670fc", type: "PASSENGER_COUNTER", apcSystem: "Telia" },
+          {
+            id: "JL518-0009d80670fc",
+            type: "PASSENGER_COUNTER",
+            apcSystem: "Telia",
+          },
         ],
       },
     ]);
@@ -197,7 +213,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.has("old-device")).toBe(false);
@@ -209,15 +225,15 @@ describe("updateCountingSystemMapFromMessage", () => {
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(includedVehicles.has("fi:jyvaskyla:6714_old" as UniqueVehicleId)).toBe(
-      false,
-    );
-    expect(includedVehicles.has("fi:kuopio:44517_other" as UniqueVehicleId)).toBe(
-      true,
-    );
-    expect(includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)).toBe(
-      true,
-    );
+    expect(
+      includedVehicles.has("fi:jyvaskyla:6714_old" as UniqueVehicleId)
+    ).toBe(false);
+    expect(
+      includedVehicles.has("fi:kuopio:44517_other" as UniqueVehicleId)
+    ).toBe(true);
+    expect(
+      includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
+    ).toBe(true);
   });
 
   test("handles multiple vehicles in one message", () => {
@@ -246,7 +262,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.size).toBe(2);
@@ -271,7 +287,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       message,
       "fi:jyvaskyla",
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     expect(countingSystemMap.size).toBe(0);
@@ -287,7 +303,7 @@ describe("createVehicleRegistryHandler", () => {
     const { update } = createVehicleRegistryHandler(
       logger,
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     const vehicleData = JSON.stringify([
@@ -295,13 +311,17 @@ describe("createVehicleRegistryHandler", () => {
         operatorId: "6714",
         vehicleShortName: "518",
         equipment: [
-          { id: "JL518-0009d80670fc", type: "PASSENGER_COUNTER", apcSystem: "Telia" },
+          {
+            id: "JL518-0009d80670fc",
+            type: "PASSENGER_COUNTER",
+            apcSystem: "Telia",
+          },
         ],
       },
     ]);
     const message = createMockMessage(
       vehicleData,
-      "persistent://apc-sandbox/source/vehicle-catalogue-fi-jyvaskyla",
+      "persistent://apc-sandbox/source/vehicle-catalogue-fi-jyvaskyla"
     );
 
     update(message);
@@ -311,9 +331,9 @@ describe("createVehicleRegistryHandler", () => {
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)).toBe(
-      true,
-    );
+    expect(
+      includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
+    ).toBe(true);
   });
 
   test("handles topic with different feedPublisherId", () => {
@@ -323,7 +343,7 @@ describe("createVehicleRegistryHandler", () => {
     const { update } = createVehicleRegistryHandler(
       logger,
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     const vehicleData = JSON.stringify([
@@ -331,13 +351,17 @@ describe("createVehicleRegistryHandler", () => {
         operatorId: "44517",
         vehicleShortName: "6",
         equipment: [
-          { id: "KL006-0009d8066d7c", type: "PASSENGER_COUNTER", apcSystem: "Telia" },
+          {
+            id: "KL006-0009d8066d7c",
+            type: "PASSENGER_COUNTER",
+            apcSystem: "Telia",
+          },
         ],
       },
     ]);
     const message = createMockMessage(
       vehicleData,
-      "persistent://apc-sandbox/source/vehicle-catalogue-fi-kuopio",
+      "persistent://apc-sandbox/source/vehicle-catalogue-fi-kuopio"
     );
 
     update(message);
@@ -348,7 +372,7 @@ describe("createVehicleRegistryHandler", () => {
       "Telia",
     ]);
     expect(includedVehicles.has("fi:kuopio:44517_6" as UniqueVehicleId)).toBe(
-      true,
+      true
     );
   });
 
@@ -359,7 +383,7 @@ describe("createVehicleRegistryHandler", () => {
     const { update } = createVehicleRegistryHandler(
       logger,
       countingSystemMap,
-      includedVehicles,
+      includedVehicles
     );
 
     const vehicleData = JSON.stringify([
@@ -373,7 +397,7 @@ describe("createVehicleRegistryHandler", () => {
     ]);
     const message = createMockMessage(
       vehicleData,
-      "persistent://apc-sandbox/source/some-other-topic",
+      "persistent://apc-sandbox/source/some-other-topic"
     );
 
     update(message);

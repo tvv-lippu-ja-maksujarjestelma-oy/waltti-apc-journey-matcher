@@ -159,7 +159,7 @@ export const initializeMatching = (
     countingSystemMap,
     includedVehicles,
     feedMap,
-  }: ProcessingConfig,
+  }: ProcessingConfig
 ) => {
   const apcCache = createApcCache(logger);
   const vehicleJourneyCache = createVehicleJourneyCache();

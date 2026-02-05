@@ -183,7 +183,7 @@ const getOptionalCountingSystemMap = (): {
     }
   }
   const includedVehicles = new Set<UniqueVehicleId>(
-    Array.from(map.values()).map(([uniqueVehicleId]) => uniqueVehicleId),
+    Array.from(map.values()).map(([uniqueVehicleId]) => uniqueVehicleId)
   );
   return { map, includedVehicles };
 };
@@ -191,7 +191,7 @@ const getOptionalCountingSystemMap = (): {
 const getProcessingConfig = (): ProcessingConfig => {
   const apcWaitInSeconds = getOptionalFiniteFloatWithDefault(
     "APC_WAIT_IN_SECONDS",
-    6,
+    6
   );
   const { map: countingSystemMap, includedVehicles } =
     getOptionalCountingSystemMap();
@@ -299,13 +299,13 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
   const gtfsrtSubscriptionType = "Exclusive";
   const gtfsrtSubscriptionInitialPosition = "Earliest";
   const apcConsumerTopicsPattern = getRequired(
-    "PULSAR_APC_CONSUMER_TOPICS_PATTERN",
+    "PULSAR_APC_CONSUMER_TOPICS_PATTERN"
   );
   const apcSubscription = getRequired("PULSAR_APC_SUBSCRIPTION");
   const apcSubscriptionType = "Exclusive";
   const apcSubscriptionInitialPosition = "Earliest";
   const vehicleRegistryConsumerTopicsPattern = getOptional(
-    "PULSAR_VEHICLE_REGISTRY_CONSUMER_TOPICS_PATTERN",
+    "PULSAR_VEHICLE_REGISTRY_CONSUMER_TOPICS_PATTERN"
   );
   const vehicleRegistrySubscription =
     getOptional("PULSAR_VEHICLE_REGISTRY_SUBSCRIPTION") ??

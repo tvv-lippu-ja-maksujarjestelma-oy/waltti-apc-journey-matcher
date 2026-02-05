@@ -57,8 +57,8 @@ function invalidValue(typ: any, val: any, key: any, parent: any = ""): never {
   const keyText = key ? ` for key "${key}"` : "";
   throw Error(
     `Invalid value${keyText}${parentText}. Expected ${prettyTyp} but got ${JSON.stringify(
-      val,
-    )}`,
+      val
+    )}`
   );
 }
 
@@ -103,7 +103,7 @@ function transform(
   typ: any,
   getProps: any,
   key: any = "",
-  parent: any = "",
+  parent: any = ""
 ): any {
   function transformPrimitive(typ: string, val: any): any {
     if (typeof typ === typeof val) return val;
@@ -130,7 +130,7 @@ function transform(
       }),
       val,
       key,
-      parent,
+      parent
     );
   }
 
@@ -154,7 +154,7 @@ function transform(
   function transformObject(
     props: { [k: string]: any },
     additional: any,
-    val: any,
+    val: any
   ): any {
     if (val === null || typeof val !== "object" || Array.isArray(val)) {
       return invalidValue(l(ref || "object"), val, key, parent);
@@ -191,10 +191,10 @@ function transform(
     return typ.hasOwnProperty("unionMembers")
       ? transformUnion(typ.unionMembers, val)
       : typ.hasOwnProperty("arrayItems")
-        ? transformArray(typ.arrayItems, val)
-        : typ.hasOwnProperty("props")
-          ? transformObject(getProps(typ), typ.additional, val)
-          : invalidValue(typ, val, key, parent);
+      ? transformArray(typ.arrayItems, val)
+      : typ.hasOwnProperty("props")
+      ? transformObject(getProps(typ), typ.additional, val)
+      : invalidValue(typ, val, key, parent);
   }
   // Numbers can be parsed by Date but shouldn't be.
   if (typ === Date && typeof val !== "number") return transformDate(val);
@@ -251,7 +251,7 @@ const typeMap: any = {
       },
       { json: "vehicleShortName", js: "vehicleShortName", typ: "" },
     ],
-    "any",
+    "any"
   ),
   Equipment: o(
     [
@@ -259,6 +259,6 @@ const typeMap: any = {
       { json: "id", js: "id", typ: "" },
       { json: "type", js: "type", typ: "" },
     ],
-    "any",
+    "any"
   ),
 };

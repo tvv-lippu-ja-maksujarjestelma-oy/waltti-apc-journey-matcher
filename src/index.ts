@@ -24,7 +24,7 @@ const exitGracefully = async (
   producer?: Pulsar.Producer,
   gtfsrtConsumer?: Pulsar.Consumer,
   apcConsumer?: Pulsar.Consumer,
-  vehicleRegistryConsumer?: Pulsar.Consumer,
+  vehicleRegistryConsumer?: Pulsar.Consumer
 ) => {
   if (exitError) {
     logger.fatal(exitError);
@@ -39,7 +39,7 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when setting health checks to fail",
+      "Something went wrong when setting health checks to fail"
     );
   }
   try {
@@ -50,7 +50,7 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when closing vehicle registry Pulsar consumer",
+      "Something went wrong when closing vehicle registry Pulsar consumer"
     );
   }
   try {
@@ -61,7 +61,7 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when closing APC Pulsar consumer",
+      "Something went wrong when closing APC Pulsar consumer"
     );
   }
   try {
@@ -146,7 +146,7 @@ const exitGracefully = async (
         producer,
         gtfsrtConsumer,
         apcConsumer,
-        vehicleRegistryConsumer,
+        vehicleRegistryConsumer
       );
       /* eslint-enable @typescript-eslint/no-floating-promises */
     };
@@ -181,13 +181,13 @@ const exitGracefully = async (
       logger.info("Create APC Pulsar consumer");
       apcConsumer = await createPulsarConsumer(
         client,
-        config.pulsar.apcConsumerConfig,
+        config.pulsar.apcConsumerConfig
       );
       if (config.pulsar.vehicleRegistryConsumerConfig) {
         logger.info("Create vehicle registry Pulsar consumer");
         vehicleRegistryConsumer = await createPulsarConsumer(
           client,
-          config.pulsar.vehicleRegistryConsumerConfig as Pulsar.ConsumerConfig,
+          config.pulsar.vehicleRegistryConsumerConfig as Pulsar.ConsumerConfig
         );
       }
       logger.info("Set health check status to OK");
@@ -199,7 +199,7 @@ const exitGracefully = async (
         gtfsrtConsumer,
         apcConsumer,
         config.processing,
-        vehicleRegistryConsumer,
+        vehicleRegistryConsumer
       );
     } catch (err) {
       exitHandler(1, transformUnknownToError(err));
