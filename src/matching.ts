@@ -154,13 +154,16 @@ const formMatchedApcMessage = (
 
 export const initializeMatching = (
   logger: pino.Logger,
-  { apcWaitInSeconds, countingSystemMap, feedMap }: ProcessingConfig
+  {
+    apcWaitInSeconds,
+    countingSystemMap,
+    includedVehicles,
+    feedMap,
+  }: ProcessingConfig,
 ) => {
   const apcCache = createApcCache(logger);
   const vehicleJourneyCache = createVehicleJourneyCache();
   const resetTimer = createTimerMap(apcWaitInSeconds);
-  const includedVehicles =
-    extractVehiclesFromCountingSystemMap(countingSystemMap);
 
   const updateApcCache = (apcPulsarMessage: Pulsar.Message): void => {
     const dataString = apcPulsarMessage.getData().toString("utf8");

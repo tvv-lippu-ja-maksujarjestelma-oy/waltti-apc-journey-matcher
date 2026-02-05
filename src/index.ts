@@ -23,7 +23,8 @@ const exitGracefully = async (
   client?: Pulsar.Client,
   producer?: Pulsar.Producer,
   gtfsrtConsumer?: Pulsar.Consumer,
-  apcConsumer?: Pulsar.Consumer
+  apcConsumer?: Pulsar.Consumer,
+  vehicleRegistryConsumer?: Pulsar.Consumer,
 ) => {
   if (exitError) {
     logger.fatal(exitError);
@@ -38,7 +39,18 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when setting health checks to fail"
+      "Something went wrong when setting health checks to fail",
+    );
+  }
+  try {
+    if (vehicleRegistryConsumer) {
+      logger.info("Close vehicle registry Pulsar consumer");
+      await vehicleRegistryConsumer.close();
+    }
+  } catch (err) {
+    logger.error(
+      { err },
+      "Something went wrong when closing vehicle registry Pulsar consumer",
     );
   }
   try {
@@ -49,7 +61,7 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when closing APC Pulsar consumer"
+      "Something went wrong when closing APC Pulsar consumer",
     );
   }
   try {
@@ -119,6 +131,8 @@ const exitGracefully = async (
     let gtfsrtConsumer: Pulsar.Consumer;
     let apcConsumer: Pulsar.Consumer;
 
+    let vehicleRegistryConsumer: Pulsar.Consumer | undefined;
+
     const exitHandler = (exitCode: number, exitError?: Error) => {
       // Exit next.
       /* eslint-disable @typescript-eslint/no-floating-promises */
@@ -131,7 +145,8 @@ const exitGracefully = async (
         client,
         producer,
         gtfsrtConsumer,
-        apcConsumer
+        apcConsumer,
+        vehicleRegistryConsumer,
       );
       /* eslint-enable @typescript-eslint/no-floating-promises */
     };
@@ -166,8 +181,15 @@ const exitGracefully = async (
       logger.info("Create APC Pulsar consumer");
       apcConsumer = await createPulsarConsumer(
         client,
-        config.pulsar.apcConsumerConfig
+        config.pulsar.apcConsumerConfig,
       );
+      if (config.pulsar.vehicleRegistryConsumerConfig) {
+        logger.info("Create vehicle registry Pulsar consumer");
+        vehicleRegistryConsumer = await createPulsarConsumer(
+          client,
+          config.pulsar.vehicleRegistryConsumerConfig as Pulsar.ConsumerConfig,
+        );
+      }
       logger.info("Set health check status to OK");
       setHealthOk(true);
       logger.info("Keep processing messages");
@@ -176,7 +198,8 @@ const exitGracefully = async (
         producer,
         gtfsrtConsumer,
         apcConsumer,
-        config.processing
+        config.processing,
+        vehicleRegistryConsumer,
       );
     } catch (err) {
       exitHandler(1, transformUnknownToError(err));
