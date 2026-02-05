@@ -24,8 +24,20 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v3
         with:
-          node-version: "lts/*"
+          # Pin to Node 20 so pulsar-client can use pre-built binaries (none for Node 24).
+          node-version: "20"
           cache: "npm"
+      # Pre-built pulsar-client binaries often fail to download from archive.apache.org;
+      # install the C++ client so the addon can build from source.
+      - name: Install Pulsar C++ client
+        run: |
+          PULSAR_CPP_VERSION=4.0.0
+          PULSAR_CPP_BASE="https://archive.apache.org/dist/pulsar/pulsar-client-cpp-${PULSAR_CPP_VERSION}/deb-x86_64"
+          sudo apt-get update -qq
+          curl -sLO "${PULSAR_CPP_BASE}/apache-pulsar-client.deb"
+          curl -sLO "${PULSAR_CPP_BASE}/apache-pulsar-client-dev.deb"
+          sudo apt-get install -y --no-install-recommends ./apache-pulsar-client.deb ./apache-pulsar-client-dev.deb
+          rm -f apache-pulsar-client.deb apache-pulsar-client-dev.deb
       - name: Install NPM dependencies
         run: npm ci
       # This step considers also the files ignored in .dockerignore, such as

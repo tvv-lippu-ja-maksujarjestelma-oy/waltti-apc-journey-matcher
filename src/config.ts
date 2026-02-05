@@ -32,6 +32,7 @@ export type FeedMap = Map<
 export interface ProcessingConfig {
   apcWaitInSeconds: number;
   countingSystemMap: CountingSystemMap;
+  includedVehicles: Set<UniqueVehicleId>;
   feedMap: FeedMap;
 }
 
@@ -46,12 +47,20 @@ export interface PulsarOauth2Config {
   scope?: string;
 }
 
+export interface VehicleRegistryConsumerConfig {
+  topicsPattern: string;
+  subscription: string;
+  subscriptionType: "Exclusive";
+  subscriptionInitialPosition: "Earliest";
+}
+
 export interface PulsarConfig {
   oauth2Config?: PulsarOauth2Config;
   clientConfig: Pulsar.ClientConfig;
   producerConfig: Pulsar.ProducerConfig;
   gtfsrtConsumerConfig: Pulsar.ConsumerConfig;
   apcConsumerConfig: Pulsar.ConsumerConfig;
+  vehicleRegistryConsumerConfig?: VehicleRegistryConsumerConfig;
 }
 
 export interface HealthCheckConfig {
@@ -137,66 +146,60 @@ const getStringTripleMap = (
   return map;
 };
 
-const getStringPairMap = (
-  envVariable: string
-): Map<string, [string, string]> => {
-  // Check the contents below. Crashing here is fine, too.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const keyValueList = JSON.parse(getRequired(envVariable));
-  if (!Array.isArray(keyValueList)) {
-    throw new Error(`${envVariable} must be a an array`);
-  }
-  const map = new Map<string, [string, string]>(keyValueList);
-  if (map.size < 1) {
-    throw new Error(
-      `${envVariable} must have at least one array entry in the form of [string, [string, string]].`
-    );
-  }
-  if (map.size !== keyValueList.length) {
-    throw new Error(`${envVariable} must have each key only once.`);
-  }
-  if (
-    Array.from(map.values()).some(
-      (pair) => !Array.isArray(pair) || pair.length !== 2
-    ) ||
-    Array.from(map.entries())
-      .flat(2)
-      .some((x) => typeof x !== "string")
-  ) {
-    throw new Error(
-      `${envVariable} must contain only strings in the form of [string, [string, string]].`
-    );
-  }
-  return map;
-};
-
-const getCountingSystemMap = (envVariable: string): CountingSystemMap => {
-  const pairMap = getStringPairMap(envVariable);
-  Array.from(pairMap.values()).forEach((pair) => {
-    const parts = pair[0].split(":");
-    if (
-      parts.length < 2 ||
-      parts.slice(0, -1).join("").length < 1 ||
-      parts.slice(-1).join("").length < 1
-    ) {
-      throw new Error(
-        `${envVariable} must have a colon separating non-empty strings in the form of [string, [string:string, string]].`
-      );
+const getOptionalCountingSystemMap = (): {
+  map: CountingSystemMap;
+  includedVehicles: Set<UniqueVehicleId>;
+} => {
+  const raw = getOptional("COUNTING_SYSTEM_MAP");
+  const map: CountingSystemMap = new Map();
+  if (raw != null && raw.trim() !== "" && raw !== "[]") {
+    try {
+      const keyValueList = JSON.parse(raw) as unknown;
+      if (Array.isArray(keyValueList)) {
+        keyValueList.forEach((entry: unknown) => {
+          if (
+            Array.isArray(entry) &&
+            entry.length === 2 &&
+            typeof entry[0] === "string" &&
+            Array.isArray(entry[1]) &&
+            entry[1].length === 2 &&
+            typeof entry[1][0] === "string" &&
+            typeof entry[1][1] === "string"
+          ) {
+            const [uniqueVehicleId, vendor] = entry[1] as [string, string];
+            const parts = uniqueVehicleId.split(":");
+            if (
+              parts.length >= 2 &&
+              parts.slice(0, -1).join("").length >= 1 &&
+              parts.slice(-1).join("").length >= 1
+            ) {
+              map.set(entry[0], [uniqueVehicleId as UniqueVehicleId, vendor]);
+            }
+          }
+        });
+      }
+    } catch {
+      // Invalid: leave map empty
     }
-  });
-  return pairMap as CountingSystemMap;
+  }
+  const includedVehicles = new Set<UniqueVehicleId>(
+    Array.from(map.values()).map(([uniqueVehicleId]) => uniqueVehicleId)
+  );
+  return { map, includedVehicles };
 };
 
-const getProcessingConfig = () => {
+const getProcessingConfig = (): ProcessingConfig => {
   const apcWaitInSeconds = getOptionalFiniteFloatWithDefault(
     "APC_WAIT_IN_SECONDS",
     6
   );
-  const countingSystemMap = getCountingSystemMap("COUNTING_SYSTEM_MAP");
+  const { map: countingSystemMap, includedVehicles } =
+    getOptionalCountingSystemMap();
   const feedMap = getStringTripleMap("FEED_MAP");
   return {
     apcWaitInSeconds,
     countingSystemMap,
+    includedVehicles,
     feedMap,
   };
 };
@@ -301,6 +304,12 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
   const apcSubscription = getRequired("PULSAR_APC_SUBSCRIPTION");
   const apcSubscriptionType = "Exclusive";
   const apcSubscriptionInitialPosition = "Earliest";
+  const vehicleRegistryConsumerTopicsPattern = getOptional(
+    "PULSAR_VEHICLE_REGISTRY_CONSUMER_TOPICS_PATTERN"
+  );
+  const vehicleRegistrySubscription =
+    getOptional("PULSAR_VEHICLE_REGISTRY_SUBSCRIPTION") ??
+    "journey-matcher-vehicle-registry";
   const base = {
     clientConfig: {
       serviceUrl,
@@ -324,11 +333,19 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
       subscriptionType: apcSubscriptionType,
       subscriptionInitialPosition: apcSubscriptionInitialPosition,
     },
-  } as const;
+    vehicleRegistryConsumerConfig: vehicleRegistryConsumerTopicsPattern
+      ? {
+          topicsPattern: vehicleRegistryConsumerTopicsPattern,
+          subscription: vehicleRegistrySubscription,
+          subscriptionType: "Exclusive" as const,
+          subscriptionInitialPosition: "Earliest" as const,
+        }
+      : undefined,
+  };
 
   const result = oauth2Config ? { ...base, oauth2Config } : base;
 
-  return result;
+  return result as PulsarConfig;
 };
 
 const getHealthCheckConfig = () => {

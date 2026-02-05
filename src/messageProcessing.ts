@@ -2,6 +2,10 @@ import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import type { ProcessingConfig } from "./config";
 import { initializeMatching } from "./matching";
+import {
+  createVehicleRegistryHandler,
+  keepUpdatingVehicleRegistry,
+} from "./vehicleRegistry";
 
 const keepReactingToGtfsrt = async (
   logger: pino.Logger,
@@ -68,13 +72,14 @@ const keepProcessingMessages = async (
   producer: Pulsar.Producer,
   gtfsrtConsumer: Pulsar.Consumer,
   apcConsumer: Pulsar.Consumer,
-  config: ProcessingConfig
+  config: ProcessingConfig,
+  vehicleRegistryConsumer?: Pulsar.Consumer
 ): Promise<void> => {
   const { updateApcCache, expandWithApcAndSend } = initializeMatching(
     logger,
     config
   );
-  const promises = [
+  const promises: Promise<void>[] = [
     keepReactingToGtfsrt(
       logger,
       producer,
@@ -83,7 +88,21 @@ const keepProcessingMessages = async (
     ),
     keepSummingApcValues(apcConsumer, updateApcCache),
   ];
-  // We expect both promises to stay pending.
+  if (vehicleRegistryConsumer) {
+    const { update } = createVehicleRegistryHandler(
+      logger,
+      config.countingSystemMap,
+      config.includedVehicles
+    );
+    promises.push(
+      keepUpdatingVehicleRegistry(logger, update, vehicleRegistryConsumer)
+    );
+    logger.info(
+      { initialMapSize: config.countingSystemMap.size },
+      "Vehicle registry consumer configured, countingSystemMap will be updated dynamically"
+    );
+  }
+  // We expect all promises to stay pending.
   await Promise.any(promises);
 };
 

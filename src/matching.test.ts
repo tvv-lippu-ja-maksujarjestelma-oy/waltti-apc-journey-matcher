@@ -196,6 +196,12 @@ test("Match with results of initializeMatching", (done) => {
       ["device4", ["fi:jyvaskyla:6714_518", "Vendor1"]],
       ["system160", ["fi:kuopio:44517_160", "Vendor2"]],
     ]),
+    includedVehicles: new Set([
+      "fi:kuopio:44517_160",
+      "fi:kuopio:44517_6",
+      "fi:jyvaskyla:6714_523",
+      "fi:jyvaskyla:6714_518",
+    ]),
     feedMap: new Map([
       [
         "persistent://tenant/namespace/gtfs-realtime-vp-fi-kuopio",
