@@ -164,21 +164,24 @@ export const keepUpdatingVehicleRegistry = (
 ): Promise<void> => {
   logger.info("Starting vehicle registry update loop");
   const processNext = async (): Promise<void> => {
-    logger.debug("Waiting for next vehicle registry message...");
-    const message = await vehicleRegistryConsumer.receive();
-    logger.info(
-      {
-        messageId: message.getMessageId().toString(),
-        eventTimestamp: message.getEventTimestamp(),
-        topic: message.getTopicName(),
-      },
-      "Received vehicle registry message"
-    );
-    update(message);
-    await vehicleRegistryConsumer.acknowledge(message);
-    processNext().catch(() => {
-      // Recursive call: ignore rejection to keep loop running
-    });
+    try {
+      logger.debug("Waiting for next vehicle registry message...");
+      const message = await vehicleRegistryConsumer.receive();
+      logger.info(
+        {
+          messageId: message.getMessageId().toString(),
+          eventTimestamp: message.getEventTimestamp(),
+          topic: message.getTopicName(),
+        },
+        "Received vehicle registry message"
+      );
+      update(message);
+      await vehicleRegistryConsumer.acknowledge(message);
+    } catch (err) {
+      logger.error({ err }, "Vehicle registry message processing failed");
+    }
+    // Await so this promise stays pending; otherwise Promise.any() would resolve after first message
+    await processNext();
   };
   return processNext();
 };
