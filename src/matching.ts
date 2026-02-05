@@ -198,7 +198,8 @@ export const initializeMatching = (
       );
       return;
     }
-    const countingSystemDetails = countingSystemMap.get(countingSystemId);
+    // Normalize to lowercase for case-insensitive matching
+    const countingSystemDetails = countingSystemMap.get(countingSystemId.toLowerCase());
     if (countingSystemDetails === undefined) {
       logger.error(
         {

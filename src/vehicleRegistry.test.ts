@@ -48,7 +48,7 @@ describe("updateCountingSystemMapFromMessage", () => {
     );
 
     expect(countingSystemMap.size).toBe(1);
-    expect(countingSystemMap.get("JL518-0009d80670fc")).toEqual([
+    expect(countingSystemMap.get("jl518-0009d80670fc")).toEqual([
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
@@ -89,11 +89,11 @@ describe("updateCountingSystemMapFromMessage", () => {
     );
 
     expect(countingSystemMap.size).toBe(2);
-    expect(countingSystemMap.get("JL520-device1")).toEqual([
+    expect(countingSystemMap.get("jl520-device1")).toEqual([
       "fi:jyvaskyla:6714_520",
       "VendorA",
     ]);
-    expect(countingSystemMap.get("JL520-device2")).toEqual([
+    expect(countingSystemMap.get("jl520-device2")).toEqual([
       "fi:jyvaskyla:6714_520",
       "VendorB",
     ]);
@@ -123,7 +123,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       includedVehicles
     );
 
-    expect(countingSystemMap.get("JL521-APC")).toEqual([
+    expect(countingSystemMap.get("jl521-apc")).toEqual([
       "fi:jyvaskyla:6714_521",
       "unknown",
     ]);
@@ -153,8 +153,8 @@ describe("updateCountingSystemMapFromMessage", () => {
     );
 
     expect(countingSystemMap.size).toBe(1);
-    expect(countingSystemMap.has("JL521-GPS")).toBe(false);
-    expect(countingSystemMap.get("JL521-APC")).toEqual([
+    expect(countingSystemMap.has("jl521-gps")).toBe(false);
+    expect(countingSystemMap.get("jl521-apc")).toEqual([
       "fi:jyvaskyla:6714_521",
       "Telia",
     ]);
@@ -221,7 +221,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       "fi:kuopio:44517_other",
       "Telia",
     ]);
-    expect(countingSystemMap.get("JL518-0009d80670fc")).toEqual([
+    expect(countingSystemMap.get("jl518-0009d80670fc")).toEqual([
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
@@ -233,6 +233,69 @@ describe("updateCountingSystemMapFromMessage", () => {
     ).toBe(true);
     expect(
       includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
+    ).toBe(true);
+  });
+
+  test("later message with new format overrides earlier message with old format", () => {
+    const countingSystemMap: CountingSystemMap = new Map();
+    const includedVehicles = new Set<UniqueVehicleId>();
+
+    const oldFormatMessage = createMockMessage(
+      JSON.stringify([
+        {
+          operatorId: "6714",
+          vehicleShortName: "483",
+          equipment: [
+            { id: "6714_483", type: "PASSENGER_COUNTER", apcSystem: "TELIA" },
+          ],
+        },
+      ])
+    );
+    updateCountingSystemMapFromMessage(
+      logger,
+      oldFormatMessage,
+      "fi:jyvaskyla",
+      countingSystemMap,
+      includedVehicles
+    );
+
+    expect(countingSystemMap.size).toBe(1);
+    expect(countingSystemMap.get("6714_483")).toEqual([
+      "fi:jyvaskyla:6714_483",
+      "TELIA",
+    ]);
+
+    const newFormatMessage = createMockMessage(
+      JSON.stringify([
+        {
+          operatorId: "6714",
+          vehicleShortName: "483",
+          equipment: [
+            {
+              id: "JL483-0009d8066d7c",
+              type: "PASSENGER_COUNTER",
+              apcSystem: "TELIA",
+            },
+          ],
+        },
+      ])
+    );
+    updateCountingSystemMapFromMessage(
+      logger,
+      newFormatMessage,
+      "fi:jyvaskyla",
+      countingSystemMap,
+      includedVehicles
+    );
+
+    expect(countingSystemMap.size).toBe(1);
+    expect(countingSystemMap.has("6714_483")).toBe(false);
+    expect(countingSystemMap.get("jl483-0009d8066d7c")).toEqual([
+      "fi:jyvaskyla:6714_483",
+      "TELIA",
+    ]);
+    expect(
+      includedVehicles.has("fi:jyvaskyla:6714_483" as UniqueVehicleId)
     ).toBe(true);
   });
 
@@ -266,11 +329,11 @@ describe("updateCountingSystemMapFromMessage", () => {
     );
 
     expect(countingSystemMap.size).toBe(2);
-    expect(countingSystemMap.get("JL518-APC")).toEqual([
+    expect(countingSystemMap.get("jl518-apc")).toEqual([
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(countingSystemMap.get("JL519-APC")).toEqual([
+    expect(countingSystemMap.get("jl519-apc")).toEqual([
       "fi:jyvaskyla:6714_519",
       "Telia",
     ]);
@@ -327,7 +390,7 @@ describe("createVehicleRegistryHandler", () => {
     update(message);
 
     expect(countingSystemMap.size).toBe(1);
-    expect(countingSystemMap.get("JL518-0009d80670fc")).toEqual([
+    expect(countingSystemMap.get("jl518-0009d80670fc")).toEqual([
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
@@ -367,7 +430,7 @@ describe("createVehicleRegistryHandler", () => {
     update(message);
 
     expect(countingSystemMap.size).toBe(1);
-    expect(countingSystemMap.get("KL006-0009d8066d7c")).toEqual([
+    expect(countingSystemMap.get("kl006-0009d8066d7c")).toEqual([
       "fi:kuopio:44517_6",
       "Telia",
     ]);

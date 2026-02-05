@@ -88,7 +88,8 @@ export const updateCountingSystemMapFromMessage = (
       if (counter.id != null) {
         const vendorName: CountingVendorName =
           (counter.apcSystem as CountingVendorName) ?? "unknown";
-        countingSystemMap.set(counter.id, [uniqueVehicleId, vendorName]);
+        // Normalize to lowercase for case-insensitive matching
+        countingSystemMap.set(counter.id.toLowerCase(), [uniqueVehicleId, vendorName]);
         includedVehicles.add(uniqueVehicleId);
         addedCount += 1;
       }
