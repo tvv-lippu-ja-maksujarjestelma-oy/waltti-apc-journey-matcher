@@ -49,7 +49,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "jest": "^30.0.0",
     "prettier": "^2.8.8",
-    "protobufjs-cli": "^1.2.0",
+    "protobufjs-cli": "^2.0.0",
     "quicktype": "^23.2.6",
     "ts-jest": "^29.4.0",
     "typescript": "^5.9.3"
@@ -58,7 +58,7 @@
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "pino": "^8.16.2",
-    "protobufjs": "^7.5.4",
+    "protobufjs": "^8.0.0",
     "pulsar-client": "^1.16.0"
   },
   "jest": {
