@@ -163,25 +163,27 @@ export const keepUpdatingVehicleRegistry = (
   vehicleRegistryConsumer: Pulsar.Consumer
 ): Promise<void> => {
   logger.info("Starting vehicle registry update loop");
-  const processNext = async (): Promise<void> => {
-    try {
-      logger.debug("Waiting for next vehicle registry message...");
-      const message = await vehicleRegistryConsumer.receive();
-      logger.info(
-        {
-          messageId: message.getMessageId().toString(),
-          eventTimestamp: message.getEventTimestamp(),
-          topic: message.getTopicName(),
-        },
-        "Received vehicle registry message"
-      );
-      update(message);
-      await vehicleRegistryConsumer.acknowledge(message);
-    } catch (err) {
-      logger.error({ err }, "Vehicle registry message processing failed");
+  const runUpdateLoop = async (): Promise<void> => {
+    // Keep this promise pending by staying inside the loop until the process exits.
+    // This avoids unbounded recursion and promise-chain growth.
+    for (;;) {
+      try {
+        logger.debug("Waiting for next vehicle registry message...");
+        const message = await vehicleRegistryConsumer.receive();
+        logger.info(
+          {
+            messageId: message.getMessageId().toString(),
+            eventTimestamp: message.getEventTimestamp(),
+            topic: message.getTopicName(),
+          },
+          "Received vehicle registry message"
+        );
+        update(message);
+        await vehicleRegistryConsumer.acknowledge(message);
+      } catch (err) {
+        logger.error({ err }, "Vehicle registry message processing failed");
+      }
     }
-    // Await so this promise stays pending; otherwise Promise.any() would resolve after first message
-    await processNext();
   };
-  return processNext();
+  return runUpdateLoop();
 };
