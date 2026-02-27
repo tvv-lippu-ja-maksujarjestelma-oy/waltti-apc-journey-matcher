@@ -94,39 +94,52 @@ const keepProcessingMessages = async (
       config.countingSystemMap,
       config.includedVehicles
     );
+    let canReplayInitialRegistryState = true;
     // Seek to the beginning so we re-read all retained vehicle catalogue
     // messages on every startup. Without this, the consumer's acknowledged
     // cursor position means it would wait for the next new message (up to 6 h).
     logger.info(
       "Seeking vehicle registry consumer to the beginning of the topic"
     );
-    await vehicleRegistryConsumer.seekTimestamp(0);
-    // Read all currently available messages to populate the map before
-    // processing APC messages.
-    logger.info("Reading initial vehicle registry messages...");
-    let initialCount = 0;
     try {
-      // Use a short timeout to drain all available messages
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        // eslint-disable-next-line no-await-in-loop
-        const message = await vehicleRegistryConsumer.receive(2000);
-        update(message);
-        // eslint-disable-next-line no-await-in-loop
-        await vehicleRegistryConsumer.acknowledge(message);
-        initialCount += 1;
-      }
-    } catch {
-      // Timeout means we have read all currently available messages
+      await vehicleRegistryConsumer.seekTimestamp(0);
+    } catch (err) {
+      canReplayInitialRegistryState = false;
+      logger.error(
+        { err },
+        "Could not seek vehicle registry consumer to the beginning. Continuing without initial replay."
+      );
     }
-    logger.info(
-      {
-        initialMessagesRead: initialCount,
-        mapSize: config.countingSystemMap.size,
-        includedVehicles: config.includedVehicles.size,
-      },
-      "Initial vehicle registry loading complete"
-    );
+
+    if (canReplayInitialRegistryState) {
+      // Read all currently available messages to populate the map before
+      // processing APC messages.
+      logger.info("Reading initial vehicle registry messages...");
+      let initialCount = 0;
+      try {
+        // Use a short timeout to drain all available messages
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          // eslint-disable-next-line no-await-in-loop
+          const message = await vehicleRegistryConsumer.receive(2000);
+          update(message);
+          // eslint-disable-next-line no-await-in-loop
+          await vehicleRegistryConsumer.acknowledge(message);
+          initialCount += 1;
+        }
+      } catch {
+        // Timeout means we have read all currently available messages
+      }
+      logger.info(
+        {
+          initialMessagesRead: initialCount,
+          mapSize: config.countingSystemMap.size,
+          includedVehicles: config.includedVehicles.size,
+        },
+        "Initial vehicle registry loading complete"
+      );
+    }
+
     promises.push(
       keepUpdatingVehicleRegistry(logger, update, vehicleRegistryConsumer)
     );
