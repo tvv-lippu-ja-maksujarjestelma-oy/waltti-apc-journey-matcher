@@ -4,7 +4,9 @@ import type { CountingSystemMap, ProcessingConfig } from "./config";
 import {
   calculateUtcStartTime,
   extractVehiclesFromCountingSystemMap,
+  getCountingSystemDetails,
   getCountingSystemIdFromMqttTopic,
+  getMissingCountingSystemDiagnostics,
   getUniqueVehicleId,
   initializeMatching,
 } from "./matching";
@@ -42,6 +44,36 @@ test("Extracting countingSystemId from a valid MQTT topic succeeds", () => {
     "apc-from-vehicle/v1/fi/waltti/telia/luminator-telia-apc-00160";
   const result = "luminator-telia-apc-00160";
   expect(getCountingSystemIdFromMqttTopic(mqttTopic)).toStrictEqual(result);
+});
+
+test("Finding countingSystemDetails supports legacy mixed-case map keys", () => {
+  const countingSystemMap: CountingSystemMap = new Map([
+    ["JL463-0009d8066cf0", ["fi:jyvaskyla:6714_463", "TELIA"]],
+  ]);
+  expect(
+    getCountingSystemDetails(countingSystemMap, "JL463-0009d8066cf0")
+  ).toStrictEqual(["fi:jyvaskyla:6714_463", "TELIA"]);
+});
+
+test("Missing counting system diagnostics are compact and informative", () => {
+  const countingSystemMap: CountingSystemMap = new Map([
+    ["JL463-0009d8066cf0", ["fi:jyvaskyla:6714_463", "TELIA"]],
+    ["KL006-APC", ["fi:kuopio:44517_6", "Telia"]],
+  ]);
+  const diagnostics = getMissingCountingSystemDiagnostics(
+    countingSystemMap,
+    "JL475-0009d8066d78"
+  );
+  expect(diagnostics).toStrictEqual({
+    mapSize: 2,
+    normalizedCountingSystemId: "jl475-0009d8066d78",
+    hasExactKey: false,
+    hasNormalizedKey: false,
+    caseInsensitiveMatchCount: 0,
+    caseInsensitiveMatchSample: [],
+    samePrefixSample: ["JL463-0009d8066cf0"],
+    mapKeysSample: ["JL463-0009d8066cf0", "KL006-APC"],
+  });
 });
 
 test("Getting the unique vehicle ID from a valid FeedEntity succeeds", () => {

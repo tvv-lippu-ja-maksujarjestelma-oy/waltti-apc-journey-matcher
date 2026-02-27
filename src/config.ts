@@ -173,7 +173,11 @@ const getOptionalCountingSystemMap = (): {
               parts.slice(0, -1).join("").length >= 1 &&
               parts.slice(-1).join("").length >= 1
             ) {
-              map.set(entry[0], [uniqueVehicleId as UniqueVehicleId, vendor]);
+              // Normalize to lowercase for case-insensitive matching with dynamic registry
+              map.set(entry[0].toLowerCase(), [
+                uniqueVehicleId as UniqueVehicleId,
+                vendor,
+              ]);
             }
           }
         });
