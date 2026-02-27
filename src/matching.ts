@@ -6,6 +6,7 @@ import { ApcCacheValueElement, createApcCache } from "./apcCache";
 import type {
   CountingSystemId,
   CountingSystemMap,
+  CountingVendorName,
   FeedMap,
   FeedPublisherId,
   ProcessingConfig,
@@ -69,6 +70,48 @@ export const getCountingSystemIdFromMqttTopic = (
   mqttTopic: string | undefined
 ): CountingSystemId | undefined =>
   mqttTopic === undefined ? undefined : mqttTopic.split("/").at(5);
+
+export const getCountingSystemDetails = (
+  countingSystemMap: CountingSystemMap,
+  countingSystemId: CountingSystemId
+): [UniqueVehicleId, CountingVendorName] | undefined => {
+  // During rollout there may still be mixed-case keys in static map entries.
+  // Try normalized key first, then exact key for backward compatibility.
+  const normalized = countingSystemId.toLowerCase();
+  return (
+    countingSystemMap.get(normalized) ?? countingSystemMap.get(countingSystemId)
+  );
+};
+
+export const getMissingCountingSystemDiagnostics = (
+  countingSystemMap: CountingSystemMap,
+  countingSystemId: CountingSystemId
+) => {
+  const normalizedCountingSystemId = countingSystemId.toLowerCase();
+  const mapKeys = Array.from(countingSystemMap.keys());
+  const idFamilyPrefix = normalizedCountingSystemId.match(/^[a-z]+/)?.[0];
+  const maxSamples = 8;
+  const caseInsensitiveMatches = mapKeys
+    .filter((key) => key.toLowerCase() === normalizedCountingSystemId)
+    .slice(0, maxSamples);
+  const samePrefixSample =
+    idFamilyPrefix == null
+      ? []
+      : mapKeys
+          .filter((key) => key.toLowerCase().startsWith(idFamilyPrefix))
+          .slice(0, maxSamples);
+
+  return {
+    mapSize: countingSystemMap.size,
+    normalizedCountingSystemId,
+    hasExactKey: countingSystemMap.has(countingSystemId),
+    hasNormalizedKey: countingSystemMap.has(normalizedCountingSystemId),
+    caseInsensitiveMatchCount: caseInsensitiveMatches.length,
+    caseInsensitiveMatchSample: caseInsensitiveMatches,
+    samePrefixSample,
+    mapKeysSample: mapKeys.slice(0, maxSamples),
+  };
+};
 
 const flattenCounts = (
   doorCounts: stringentApc.Doorcount
@@ -198,20 +241,25 @@ export const initializeMatching = (
       );
       return;
     }
-    // Normalize to lowercase for case-insensitive matching
-    const countingSystemDetails = countingSystemMap.get(
-      countingSystemId.toLowerCase()
+    const countingSystemDetails = getCountingSystemDetails(
+      countingSystemMap,
+      countingSystemId
     );
     if (countingSystemDetails === undefined) {
+      const diagnostics = getMissingCountingSystemDiagnostics(
+        countingSystemMap,
+        countingSystemId
+      );
       logger.error(
         {
-          apcMessage: JSON.stringify(apcMessage),
-          countingSystemMapEntries: Array.from(countingSystemMap.entries()),
-          countingSystemMapObject: Object.fromEntries(countingSystemMap),
-          countingSystemMapKeys: Array.from(countingSystemMap.keys()),
           countingSystemId,
+          ...diagnostics,
+          apcMessageId: apcMessage.APC.messageId,
+          apcSchemaVersion: apcMessage.APC.schemaVersion,
+          apcTimestamp: apcMessage.APC.tst,
+          mqttTopic: apcPulsarMessage.getProperties()["mqttTopic"],
         },
-        "countingSystemId could not be found from countingSystemMap. Try adding the missing countingSystemId into the configuration."
+        "countingSystemId was not mapped to a vehicle. Check vehicle-catalogue updates and key normalization."
       );
       return;
     }
