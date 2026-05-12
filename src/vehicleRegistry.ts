@@ -7,6 +7,8 @@ import type {
 } from "./config";
 import * as VehicleApcMapping from "./quicktype/vehicleApcMapping";
 
+const VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS = 300_000;
+
 /**
  * Get the unique vehicle ID from a VehicleApcMapping.
  * Format: feedPublisherId:operatorId_vehicleShortName
@@ -169,7 +171,10 @@ export const keepUpdatingVehicleRegistry = (
     for (;;) {
       try {
         logger.debug("Waiting for next vehicle registry message...");
-        const message = await vehicleRegistryConsumer.receive();
+        // eslint-disable-next-line no-await-in-loop
+        const message = await vehicleRegistryConsumer.receive(
+          VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS
+        );
         logger.info(
           {
             messageId: message.getMessageId().toString(),
@@ -179,9 +184,13 @@ export const keepUpdatingVehicleRegistry = (
           "Received vehicle registry message"
         );
         update(message);
+        // eslint-disable-next-line no-await-in-loop
         await vehicleRegistryConsumer.acknowledge(message);
       } catch (err) {
-        logger.error({ err }, "Vehicle registry message processing failed");
+        logger.warn(
+          { err, receiveTimeoutMs: VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS },
+          "Vehicle registry consumer receive failed"
+        );
       }
     }
   };
