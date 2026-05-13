@@ -31,6 +31,7 @@ export type FeedMap = Map<
 
 export interface ProcessingConfig {
   apcWaitInSeconds: number;
+  gtfsrtReceiveTimeoutMs: number;
   countingSystemMap: CountingSystemMap;
   includedVehicles: Set<UniqueVehicleId>;
   feedMap: FeedMap;
@@ -197,11 +198,16 @@ const getProcessingConfig = (): ProcessingConfig => {
     "APC_WAIT_IN_SECONDS",
     6
   );
+  const gtfsrtReceiveTimeoutMs = getOptionalFiniteFloatWithDefault(
+    "GTFSRT_RECEIVE_TIMEOUT_MS",
+    300000
+  );
   const { map: countingSystemMap, includedVehicles } =
     getOptionalCountingSystemMap();
   const feedMap = getStringTripleMap("FEED_MAP");
   return {
     apcWaitInSeconds,
+    gtfsrtReceiveTimeoutMs,
     countingSystemMap,
     includedVehicles,
     feedMap,

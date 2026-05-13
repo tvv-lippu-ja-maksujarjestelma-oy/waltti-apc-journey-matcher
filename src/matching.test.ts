@@ -221,6 +221,7 @@ test("Match with results of initializeMatching", (done) => {
 
   const config: ProcessingConfig = {
     apcWaitInSeconds: 6,
+    gtfsrtReceiveTimeoutMs: 300000,
     countingSystemMap: new Map([
       ["device1", ["fi:kuopio:44517_160", "Vendor1"]],
       ["device2", ["fi:kuopio:44517_6", "Vendor1"]],

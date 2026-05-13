@@ -7,6 +7,8 @@ import type {
 } from "./config";
 import * as VehicleApcMapping from "./quicktype/vehicleApcMapping";
 
+const VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS = 300_000;
+
 /**
  * Get the unique vehicle ID from a VehicleApcMapping.
  * Format: feedPublisherId:operatorId_vehicleShortName
@@ -163,25 +165,34 @@ export const keepUpdatingVehicleRegistry = (
   vehicleRegistryConsumer: Pulsar.Consumer
 ): Promise<void> => {
   logger.info("Starting vehicle registry update loop");
-  const processNext = async (): Promise<void> => {
-    try {
-      logger.debug("Waiting for next vehicle registry message...");
-      const message = await vehicleRegistryConsumer.receive();
-      logger.info(
-        {
-          messageId: message.getMessageId().toString(),
-          eventTimestamp: message.getEventTimestamp(),
-          topic: message.getTopicName(),
-        },
-        "Received vehicle registry message"
-      );
-      update(message);
-      await vehicleRegistryConsumer.acknowledge(message);
-    } catch (err) {
-      logger.error({ err }, "Vehicle registry message processing failed");
+  const runUpdateLoop = async (): Promise<void> => {
+    // Keep this promise pending by staying inside the loop until the process exits.
+    // This avoids unbounded recursion and promise-chain growth.
+    for (;;) {
+      try {
+        logger.debug("Waiting for next vehicle registry message...");
+        // eslint-disable-next-line no-await-in-loop
+        const message = await vehicleRegistryConsumer.receive(
+          VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS
+        );
+        logger.info(
+          {
+            messageId: message.getMessageId().toString(),
+            eventTimestamp: message.getEventTimestamp(),
+            topic: message.getTopicName(),
+          },
+          "Received vehicle registry message"
+        );
+        update(message);
+        // eslint-disable-next-line no-await-in-loop
+        await vehicleRegistryConsumer.acknowledge(message);
+      } catch (err) {
+        logger.warn(
+          { err, receiveTimeoutMs: VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS },
+          "Vehicle registry consumer receive failed"
+        );
+      }
     }
-    // Await so this promise stays pending; otherwise Promise.any() would resolve after first message
-    await processNext();
   };
-  return processNext();
+  return runUpdateLoop();
 };
