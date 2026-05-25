@@ -71,16 +71,44 @@ export const getCountingSystemIdFromMqttTopic = (
 ): CountingSystemId | undefined =>
   mqttTopic === undefined ? undefined : mqttTopic.split("/").at(5);
 
+const getPrefixedCountingSystemIdSuffix = (
+  countingSystemId: CountingSystemId
+): CountingSystemId | undefined => {
+  const prefixedIdParts = countingSystemId.split("-");
+  return prefixedIdParts.length > 1
+    ? prefixedIdParts.slice(1).join("-")
+    : undefined;
+};
+
+const getCountingSystemLookupCandidates = (
+  countingSystemId: CountingSystemId
+): CountingSystemId[] => {
+  const normalized = countingSystemId.toLowerCase();
+  const suffix = getPrefixedCountingSystemIdSuffix(normalized);
+
+  return Array.from(
+    new Set(
+      [normalized, countingSystemId, suffix].filter(
+        (candidate): candidate is CountingSystemId =>
+          candidate !== undefined && candidate.length > 0
+      )
+    )
+  );
+};
+
 export const getCountingSystemDetails = (
   countingSystemMap: CountingSystemMap,
   countingSystemId: CountingSystemId
 ): [UniqueVehicleId, CountingVendorName] | undefined => {
   // During rollout there may still be mixed-case keys in static map entries.
-  // Try normalized key first, then exact key for backward compatibility.
-  const normalized = countingSystemId.toLowerCase();
-  return (
-    countingSystemMap.get(normalized) ?? countingSystemMap.get(countingSystemId)
-  );
+  // Try normalized key first, then exact key for backward compatibility. Some
+  // upstream splitters prefix the raw counter ID with the vehicle short name.
+  return getCountingSystemLookupCandidates(countingSystemId)
+    .map((candidate) => countingSystemMap.get(candidate))
+    .find(
+      (details): details is [UniqueVehicleId, CountingVendorName] =>
+        details !== undefined
+    );
 };
 
 export const getMissingCountingSystemDiagnostics = (
@@ -88,6 +116,10 @@ export const getMissingCountingSystemDiagnostics = (
   countingSystemId: CountingSystemId
 ) => {
   const normalizedCountingSystemId = countingSystemId.toLowerCase();
+  const lookupCandidates = getCountingSystemLookupCandidates(countingSystemId);
+  const suffixCountingSystemId = getPrefixedCountingSystemIdSuffix(
+    normalizedCountingSystemId
+  );
   const mapKeys = Array.from(countingSystemMap.keys());
   const idFamilyPrefix = normalizedCountingSystemId.match(/^[a-z]+/)?.[0];
   const maxSamples = 8;
@@ -104,8 +136,13 @@ export const getMissingCountingSystemDiagnostics = (
   return {
     mapSize: countingSystemMap.size,
     normalizedCountingSystemId,
+    lookupCandidates,
     hasExactKey: countingSystemMap.has(countingSystemId),
     hasNormalizedKey: countingSystemMap.has(normalizedCountingSystemId),
+    hasSuffixKey:
+      suffixCountingSystemId == null
+        ? false
+        : countingSystemMap.has(suffixCountingSystemId),
     caseInsensitiveMatchCount: caseInsensitiveMatches.length,
     caseInsensitiveMatchSample: caseInsensitiveMatches,
     samePrefixSample,
