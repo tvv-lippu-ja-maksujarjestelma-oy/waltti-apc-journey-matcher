@@ -37,6 +37,7 @@ describe("getConfig", () => {
 
     const config = getConfig(logger);
 
+    expect(config.processing.gtfsrtReceiveTimeoutMs).toBe(300000);
     expect(
       config.processing.countingSystemMap.get("jl475-0009d8066d78")
     ).toStrictEqual(["fi:jyvaskyla:6714_475", "TELIA"]);
@@ -46,5 +47,29 @@ describe("getConfig", () => {
     expect(
       config.processing.includedVehicles.has("fi:jyvaskyla:6714_475")
     ).toBe(true);
+  });
+
+  test("reads GTFSRT_RECEIVE_TIMEOUT_MS", () => {
+    process.env["FEED_MAP"] = JSON.stringify([
+      [
+        "persistent://apc-prod/source/splitted-gtfsrt-vp-fi-jyvaskyla",
+        ["fi:jyvaskyla", "209", "Europe/Helsinki"],
+      ],
+    ]);
+    process.env["PULSAR_SERVICE_URL"] =
+      "pulsar://pulsar-broker.pulsar.svc.cluster.local:6650";
+    process.env["PULSAR_PRODUCER_TOPIC"] =
+      "persistent://apc-prod/aggregated/aggregated-apc-journey";
+    process.env["PULSAR_GTFSRT_CONSUMER_TOPICS_PATTERN"] =
+      "persistent://apc-prod/source/splitted-gtfsrt-vp-.*";
+    process.env["PULSAR_GTFSRT_SUBSCRIPTION"] = "journey-matcher-gtfsrt-sub";
+    process.env["PULSAR_APC_CONSUMER_TOPICS_PATTERN"] =
+      "persistent://apc-prod/deduplicated/mqtt-apc-from-vehicle-deduplicated";
+    process.env["PULSAR_APC_SUBSCRIPTION"] = "journey-matcher-apc-sub";
+    process.env["GTFSRT_RECEIVE_TIMEOUT_MS"] = "120000";
+
+    const config = getConfig(logger);
+
+    expect(config.processing.gtfsrtReceiveTimeoutMs).toBe(120000);
   });
 });

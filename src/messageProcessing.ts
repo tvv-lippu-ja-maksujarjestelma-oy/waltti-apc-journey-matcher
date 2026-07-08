@@ -1,5 +1,5 @@
 import type pino from "pino";
-import type Pulsar from "pulsar-client";
+import Pulsar from "pulsar-client";
 import type { ProcessingConfig } from "./config";
 import { initializeMatching } from "./matching";
 import {
@@ -7,10 +7,32 @@ import {
   keepUpdatingVehicleRegistry,
 } from "./vehicleRegistry";
 
+const APC_RECEIVE_TIMEOUT_MS = 300_000;
+
+export const rewindVehicleRegistryConsumer = async (
+  logger: pino.Logger,
+  vehicleRegistryConsumer: Pulsar.Consumer
+): Promise<boolean> => {
+  logger.info(
+    "Seeking vehicle registry consumer to the earliest available message"
+  );
+  try {
+    await vehicleRegistryConsumer.seek(Pulsar.MessageId.earliest());
+    return true;
+  } catch (err) {
+    logger.warn(
+      { err },
+      "Could not rewind vehicle registry consumer; continuing from current cursor"
+    );
+    return false;
+  }
+};
+
 const keepReactingToGtfsrt = async (
   logger: pino.Logger,
   producer: Pulsar.Producer,
   gtfsrtConsumer: Pulsar.Consumer,
+  receiveTimeoutMs: number,
   expandWithApcAndSend: (
     gtfsrtMessage: Pulsar.Message,
     sendCallback: (fullApcMessage: Pulsar.ProducerMessage) => void
@@ -19,7 +41,16 @@ const keepReactingToGtfsrt = async (
   // Errors are handled in the calling function.
   /* eslint-disable no-await-in-loop */
   for (;;) {
-    const gtfsrtPulsarMessage = await gtfsrtConsumer.receive();
+    let gtfsrtPulsarMessage: Pulsar.Message;
+    try {
+      gtfsrtPulsarMessage = await gtfsrtConsumer.receive(receiveTimeoutMs);
+    } catch (err) {
+      logger.error(
+        { err, receiveTimeoutMs },
+        "GTFS-RT consumer receive failed"
+      );
+      throw err;
+    }
     logger.debug(
       {
         topic: gtfsrtPulsarMessage.getTopicName(),
@@ -52,17 +83,28 @@ const keepReactingToGtfsrt = async (
 };
 
 const keepSummingApcValues = async (
+  logger: pino.Logger,
   apcConsumer: Pulsar.Consumer,
   updateApcCache: (apcMessage: Pulsar.Message) => void
 ): Promise<void> => {
   // Errors are handled on the main level.
   /* eslint-disable no-await-in-loop */
   for (;;) {
-    const apcMessage = await apcConsumer.receive();
-    updateApcCache(apcMessage);
-    // In case of an error, exit via the listener on unhandledRejection.
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    apcConsumer.acknowledge(apcMessage);
+    let apcMessage: Pulsar.Message | undefined;
+    try {
+      apcMessage = await apcConsumer.receive(APC_RECEIVE_TIMEOUT_MS);
+    } catch (err) {
+      logger.warn(
+        { err, receiveTimeoutMs: APC_RECEIVE_TIMEOUT_MS },
+        "APC consumer receive failed"
+      );
+    }
+    if (apcMessage != null) {
+      updateApcCache(apcMessage);
+      // In case of an error, exit via the listener on unhandledRejection.
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      apcConsumer.acknowledge(apcMessage);
+    }
   }
   /* eslint-enable no-await-in-loop */
 };
@@ -84,9 +126,10 @@ const keepProcessingMessages = async (
       logger,
       producer,
       gtfsrtConsumer,
+      config.gtfsrtReceiveTimeoutMs,
       expandWithApcAndSend
     ),
-    keepSummingApcValues(apcConsumer, updateApcCache),
+    keepSummingApcValues(logger, apcConsumer, updateApcCache),
   ];
   if (vehicleRegistryConsumer) {
     const { update } = createVehicleRegistryHandler(
@@ -94,23 +137,10 @@ const keepProcessingMessages = async (
       config.countingSystemMap,
       config.includedVehicles
     );
-    let canReplayInitialRegistryState = true;
-    // Seek to the beginning so we re-read all retained vehicle catalogue
-    // messages on every startup. Without this, the consumer's acknowledged
-    // cursor position means it would wait for the next new message (up to 6 h).
-    logger.info(
-      "Seeking vehicle registry consumer to the beginning of the topic"
+    const canReplayInitialRegistryState = await rewindVehicleRegistryConsumer(
+      logger,
+      vehicleRegistryConsumer
     );
-    try {
-      await vehicleRegistryConsumer.seekTimestamp(0);
-    } catch (err) {
-      canReplayInitialRegistryState = false;
-      logger.error(
-        { err },
-        "Could not seek vehicle registry consumer to the beginning. Continuing without initial replay."
-      );
-    }
-
     if (canReplayInitialRegistryState) {
       // Read all currently available messages to populate the map before
       // processing APC messages.
@@ -145,7 +175,7 @@ const keepProcessingMessages = async (
     );
   }
   // We expect all promises to stay pending.
-  await Promise.any(promises);
+  await Promise.all(promises);
 };
 
 export default keepProcessingMessages;

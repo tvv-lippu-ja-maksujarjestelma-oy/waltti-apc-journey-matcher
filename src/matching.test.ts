@@ -55,24 +55,40 @@ test("Finding countingSystemDetails supports legacy mixed-case map keys", () => 
   ).toStrictEqual(["fi:jyvaskyla:6714_463", "TELIA"]);
 });
 
+test("Finding countingSystemDetails falls back from vehicle-prefixed ID to raw counter ID", () => {
+  const countingSystemMap: CountingSystemMap = new Map([
+    ["0009d8066f88", ["fi:lahti:6957_155", "TELIA"]],
+  ]);
+  expect(
+    getCountingSystemDetails(countingSystemMap, "155-0009d8066f88")
+  ).toStrictEqual(["fi:lahti:6957_155", "TELIA"]);
+});
+
 test("Missing counting system diagnostics are compact and informative", () => {
   const countingSystemMap: CountingSystemMap = new Map([
     ["JL463-0009d8066cf0", ["fi:jyvaskyla:6714_463", "TELIA"]],
     ["KL006-APC", ["fi:kuopio:44517_6", "Telia"]],
+    ["0009d8066d78", ["fi:lahti:6957_475", "TELIA"]],
   ]);
   const diagnostics = getMissingCountingSystemDiagnostics(
     countingSystemMap,
     "JL475-0009d8066d78"
   );
   expect(diagnostics).toStrictEqual({
-    mapSize: 2,
+    mapSize: 3,
     normalizedCountingSystemId: "jl475-0009d8066d78",
+    lookupCandidates: [
+      "jl475-0009d8066d78",
+      "JL475-0009d8066d78",
+      "0009d8066d78",
+    ],
     hasExactKey: false,
     hasNormalizedKey: false,
+    hasSuffixKey: true,
     caseInsensitiveMatchCount: 0,
     caseInsensitiveMatchSample: [],
     samePrefixSample: ["JL463-0009d8066cf0"],
-    mapKeysSample: ["JL463-0009d8066cf0", "KL006-APC"],
+    mapKeysSample: ["JL463-0009d8066cf0", "KL006-APC", "0009d8066d78"],
   });
 });
 
@@ -221,6 +237,7 @@ test("Match with results of initializeMatching", (done) => {
 
   const config: ProcessingConfig = {
     apcWaitInSeconds: 6,
+    gtfsrtReceiveTimeoutMs: 300000,
     countingSystemMap: new Map([
       ["device1", ["fi:kuopio:44517_160", "Vendor1"]],
       ["device2", ["fi:kuopio:44517_6", "Vendor1"]],
