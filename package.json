@@ -50,7 +50,7 @@
     "jest": "^30.0.0",
     "prettier": "^2.8.8",
     "protobufjs-cli": "^2.6.1",
-    "quicktype": "^24.0.2",
+    "quicktype": "^25.1.0",
     "ts-jest": "^29.4.0",
     "typescript": "^5.9.3"
   },
