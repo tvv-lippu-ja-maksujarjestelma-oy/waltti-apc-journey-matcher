@@ -22,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           # Pin to Node 20 so pulsar-client can use pre-built binaries (none for Node 24).
           node-version: "20"
