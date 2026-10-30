@@ -66,10 +66,10 @@ export const changePinoLevelToGcpLogSeverity = (
  * https://cloud.google.com/error-reporting/docs/formatting-error-messages#json_representation
  * as reference.
  */
-export const createLogger = <Options extends pino.LoggerOptions>(
-  options: Options & { name: string },
+export const createLogger = (
+  options: pino.LoggerOptions & { name: string },
   stream?: pino.DestinationStream
-): pino.Logger<Options> =>
+): pino.Logger =>
   pino(
     {
       timestamp: pino.stdTimeFunctions.isoTime,
@@ -82,7 +82,7 @@ export const createLogger = <Options extends pino.LoggerOptions>(
       messageKey: "message",
       // Specific to GCP.
       formatters: {
-        level(label: pino.Level): object {
+        level(label: string): object {
           // `@type` property tells Error Reporting to track even if there is no
           // `stack_trace`
           const typeProperty =
@@ -94,7 +94,7 @@ export const createLogger = <Options extends pino.LoggerOptions>(
               : {};
           return {
             level: label,
-            severity: changePinoLevelToGcpLogSeverity(label),
+            severity: changePinoLevelToGcpLogSeverity(label as pino.Level),
             ...typeProperty,
           };
         },

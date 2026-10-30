@@ -1,4 +1,4 @@
-FROM node:18-slim AS base
+FROM node:26-bookworm-slim AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -6,8 +6,11 @@ RUN apt-get update \
   && apt-get upgrade --assume-yes \
   && rm -rf /var/lib/apt/lists/*
 
+# Recent node base images ship /home/node with mode 0700. The Kubernetes
+# deployment runs the container as a non-node UID, which then cannot traverse
+# /home/node to reach the app. Restore world traversal explicitly.
 USER node
-RUN mkdir /home/node/app
+RUN chmod go+rx /home/node && mkdir /home/node/app
 WORKDIR /home/node/app
 COPY --chown=node:node ./package.json ./package-lock.json ./
 
@@ -42,7 +45,7 @@ RUN npm run build
 
 # The base image should be the same as the base image of base. Yet using ARG for
 # the base image irritates hadolint and might break Dependabot.
-FROM node:18-slim AS production
+FROM node:26-bookworm-slim AS production
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV NODE_ENV=production
@@ -54,8 +57,11 @@ RUN apt-get update \
   'tini' \
   && rm -rf /var/lib/apt/lists/*
 
+# Recent node base images ship /home/node with mode 0700. The Kubernetes
+# deployment runs the container as a non-node UID, which then cannot traverse
+# /home/node to reach the app. Restore world traversal explicitly.
 USER node
-RUN mkdir /home/node/app
+RUN chmod go+rx /home/node && mkdir /home/node/app
 WORKDIR /home/node/app
 COPY \
   --chown=node:node \

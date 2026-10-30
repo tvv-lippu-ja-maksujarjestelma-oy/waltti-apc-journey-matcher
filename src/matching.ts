@@ -1,5 +1,5 @@
 import { add, intervalToDuration, sub } from "date-fns";
-import { zonedTimeToUtc } from "date-fns-tz";
+import { fromZonedTime } from "date-fns-tz";
 import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import { ApcCacheValueElement, createApcCache } from "./apcCache";
@@ -179,7 +179,7 @@ export const calculateUtcStartTime = (
     (hours ?? 0) * 3600 + (minutes ?? 0) * 60 + (seconds ?? 0);
   const duration = intervalToDuration({ start: 0, end: 1_000 * totalSeconds });
   const utcStartTime = sub(
-    add(zonedTimeToUtc(`${startDate}T12:00:00`, timezoneName), duration),
+    add(fromZonedTime(`${startDate}T12:00:00`, timezoneName), duration),
     intervalToDuration({ start: 0, end: 12 * 60 * 60 * 1_000 })
   );
   return formatDateToZuluWithoutMilliseconds(utcStartTime);
