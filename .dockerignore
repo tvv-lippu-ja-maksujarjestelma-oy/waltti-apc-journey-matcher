@@ -9,6 +9,5 @@
 !/package.json
 !/package-lock.json
 !/tsconfig.json
-!/.eslintrc.cjs
-!/.eslintignore
+!/eslint.config.mjs
 !/.prettierignore

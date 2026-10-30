@@ -11,7 +11,7 @@ const createMockLogger = (): pino.Logger =>
     error: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
-  } as unknown as pino.Logger);
+  }) as unknown as pino.Logger;
 
 describe("rewindVehicleRegistryConsumer", () => {
   test("rewinds vehicle registry consumer to earliest available message", async () => {
