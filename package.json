@@ -58,7 +58,7 @@
   "dependencies": {
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
-    "pino": "^8.16.2",
+    "pino": "^10.4.0",
     "protobufjs": "^8.7.1",
     "pulsar-client": "^1.18.0"
   },
