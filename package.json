@@ -46,7 +46,7 @@
     "eslint-plugin-jest": "^29.17.0",
     "eslint-plugin-prettier": "^5.5.7",
     "globals": "^17.13.0",
-    "jest": "^30.0.0",
+    "jest": "^30.5.2",
     "jest-util": "^30.5.1",
     "prettier": "^3.9.10",
     "protobufjs-cli": "^2.7.1",
