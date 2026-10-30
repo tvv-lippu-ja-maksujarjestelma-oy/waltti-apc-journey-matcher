@@ -39,7 +39,6 @@ const keepReactingToGtfsrt = async (
   ) => void
 ) => {
   // Errors are handled in the calling function.
-  /* eslint-disable no-await-in-loop */
   for (;;) {
     let gtfsrtPulsarMessage: Pulsar.Message;
     try {
@@ -79,7 +78,6 @@ const keepReactingToGtfsrt = async (
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     gtfsrtConsumer.acknowledge(gtfsrtPulsarMessage);
   }
-  /* eslint-enable no-await-in-loop */
 };
 
 const keepSummingApcValues = async (
@@ -88,7 +86,6 @@ const keepSummingApcValues = async (
   updateApcCache: (apcMessage: Pulsar.Message) => void
 ): Promise<void> => {
   // Errors are handled on the main level.
-  /* eslint-disable no-await-in-loop */
   for (;;) {
     let apcMessage: Pulsar.Message | undefined;
     try {
@@ -106,7 +103,6 @@ const keepSummingApcValues = async (
       apcConsumer.acknowledge(apcMessage);
     }
   }
-  /* eslint-enable no-await-in-loop */
 };
 
 const keepProcessingMessages = async (
@@ -148,12 +144,9 @@ const keepProcessingMessages = async (
       let initialCount = 0;
       try {
         // Use a short timeout to drain all available messages
-        // eslint-disable-next-line no-constant-condition
         while (true) {
-          // eslint-disable-next-line no-await-in-loop
           const message = await vehicleRegistryConsumer.receive(2000);
           update(message);
-          // eslint-disable-next-line no-await-in-loop
           await vehicleRegistryConsumer.acknowledge(message);
           initialCount += 1;
         }

@@ -1,6 +1,7 @@
 queue_rules:
   - name: dependabot
     merge_conditions:
+      - "#approved-reviews-by>=1"
       - check-success=Build, check, test, push
       - check-success=CodeQL
     batch_size: 10
@@ -10,6 +11,7 @@ pull_request_rules:
   - name: Merge Dependabot PRs automatically within repository constraints
     conditions:
       - author=dependabot[bot]
+      - "#approved-reviews-by>=1"
     actions:
       queue:
         name: dependabot

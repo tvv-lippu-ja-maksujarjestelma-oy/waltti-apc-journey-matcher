@@ -171,7 +171,6 @@ export const keepUpdatingVehicleRegistry = (
     for (;;) {
       try {
         logger.debug("Waiting for next vehicle registry message...");
-        // eslint-disable-next-line no-await-in-loop
         const message = await vehicleRegistryConsumer.receive(
           VEHICLE_REGISTRY_RECEIVE_TIMEOUT_MS
         );
@@ -184,7 +183,6 @@ export const keepUpdatingVehicleRegistry = (
           "Received vehicle registry message"
         );
         update(message);
-        // eslint-disable-next-line no-await-in-loop
         await vehicleRegistryConsumer.acknowledge(message);
       } catch (err) {
         logger.warn(

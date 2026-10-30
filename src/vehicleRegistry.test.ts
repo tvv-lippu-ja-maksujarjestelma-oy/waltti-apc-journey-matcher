@@ -18,7 +18,7 @@ const createMockMessage = (
     getMessageId: () => ({ toString: () => "mock-message-id" }),
     getEventTimestamp: () => Date.now(),
     getProperties: () => ({}),
-  } as unknown as Pulsar.Message);
+  }) as unknown as Pulsar.Message;
 
 describe("updateCountingSystemMapFromMessage", () => {
   test("adds single counting system to map and includedVehicles", () => {
@@ -52,9 +52,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(
-      includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
-    ).toBe(true);
+    expect(includedVehicles.has("fi:jyvaskyla:6714_518")).toBe(true);
   });
 
   test("adds all PASSENGER_COUNTER devices for one vehicle", () => {
@@ -98,9 +96,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       "VendorB",
     ]);
     expect(includedVehicles.size).toBe(1);
-    expect(
-      includedVehicles.has("fi:jyvaskyla:6714_520" as UniqueVehicleId)
-    ).toBe(true);
+    expect(includedVehicles.has("fi:jyvaskyla:6714_520")).toBe(true);
   });
 
   test("uses unknown when apcSystem is missing", () => {
@@ -187,8 +183,8 @@ describe("updateCountingSystemMapFromMessage", () => {
   test("clears previous entries for same feedPublisherId only", () => {
     const countingSystemMap: CountingSystemMap = new Map();
     const includedVehicles = new Set<UniqueVehicleId>([
-      "fi:jyvaskyla:6714_old" as UniqueVehicleId,
-      "fi:kuopio:44517_other" as UniqueVehicleId,
+      "fi:jyvaskyla:6714_old",
+      "fi:kuopio:44517_other",
     ]);
     countingSystemMap.set("old-device", ["fi:jyvaskyla:6714_old", "Telia"]);
     countingSystemMap.set("other-device", ["fi:kuopio:44517_other", "Telia"]);
@@ -225,15 +221,9 @@ describe("updateCountingSystemMapFromMessage", () => {
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(
-      includedVehicles.has("fi:jyvaskyla:6714_old" as UniqueVehicleId)
-    ).toBe(false);
-    expect(
-      includedVehicles.has("fi:kuopio:44517_other" as UniqueVehicleId)
-    ).toBe(true);
-    expect(
-      includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
-    ).toBe(true);
+    expect(includedVehicles.has("fi:jyvaskyla:6714_old")).toBe(false);
+    expect(includedVehicles.has("fi:kuopio:44517_other")).toBe(true);
+    expect(includedVehicles.has("fi:jyvaskyla:6714_518")).toBe(true);
   });
 
   test("later message with new format overrides earlier message with old format", () => {
@@ -294,9 +284,7 @@ describe("updateCountingSystemMapFromMessage", () => {
       "fi:jyvaskyla:6714_483",
       "TELIA",
     ]);
-    expect(
-      includedVehicles.has("fi:jyvaskyla:6714_483" as UniqueVehicleId)
-    ).toBe(true);
+    expect(includedVehicles.has("fi:jyvaskyla:6714_483")).toBe(true);
   });
 
   test("handles multiple vehicles in one message", () => {
@@ -394,9 +382,7 @@ describe("createVehicleRegistryHandler", () => {
       "fi:jyvaskyla:6714_518",
       "Telia",
     ]);
-    expect(
-      includedVehicles.has("fi:jyvaskyla:6714_518" as UniqueVehicleId)
-    ).toBe(true);
+    expect(includedVehicles.has("fi:jyvaskyla:6714_518")).toBe(true);
   });
 
   test("handles topic with different feedPublisherId", () => {
@@ -434,9 +420,7 @@ describe("createVehicleRegistryHandler", () => {
       "fi:kuopio:44517_6",
       "Telia",
     ]);
-    expect(includedVehicles.has("fi:kuopio:44517_6" as UniqueVehicleId)).toBe(
-      true
-    );
+    expect(includedVehicles.has("fi:kuopio:44517_6")).toBe(true);
   });
 
   test("does not update map when topic name has no vehicle-catalogue prefix", () => {

@@ -14,23 +14,26 @@ updates:
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
+    ignore:
+      # TS 7 blocked: typescript-eslint (<6.1) and ts-jest (<7) lack TS 7 support; revisit after TS 7.1 (typescript-eslint#10940, ts-jest#5366)
+      - dependency-name: "typescript"
+        versions: [">=7"]
     groups:
       date-fns:
         patterns:
           - "date-fns"
           - "date-fns-tz"
-      eslint-config-airbnb:
+      eslint:
         patterns:
-          - "eslint-config-airbnb-base"
-          - "eslint-config-airbnb-typescript"
-      eslint-plugin-import:
-        patterns:
-          - "eslint-import-resolver-typescript"
-          - "eslint-plugin-import"
+          - "@eslint-community/*"
+          - "@eslint/*"
+          - "eslint"
+          - "eslint-*"
+          - "globals"
+          - "typescript-eslint"
       jest:
         patterns:
           - "@types/jest"
-          - "eslint-plugin-jest"
           - "jest"
           - "ts-jest"
       libsodium-wrappers:
@@ -44,8 +47,6 @@ updates:
           - "pg"
       prettier:
         patterns:
-          - "eslint-config-prettier"
-          - "eslint-plugin-prettier"
           - "prettier"
       protobuf:
         patterns:
@@ -54,6 +55,3 @@ updates:
       tsconfig:
         patterns:
           - "@tsconfig/*"
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"

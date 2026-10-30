@@ -8,5 +8,6 @@
     "outDir": "dist",
     "allowJs": true,
     "checkJs": false
-  }
+  },
+  "include": ["src"]
 }
