@@ -330,9 +330,8 @@ test("every workflow filename rejects retained broad bot approval and fictional 
       /gh\s+pr\s+review\b[\s\S]*?--approve/,
       filename
     );
+    assert.doesNotMatch(workflow, /DEPENDENCY_POLICY_ENABLED/, filename);
   }
-  const contract = fs.readFileSync("docs/dependency-policy.md", "utf8");
-  assert.doesNotMatch(contract, /DEPENDENCY_POLICY_ENABLED/);
 });
 
 /* eslint-enable @typescript-eslint/no-require-imports */
