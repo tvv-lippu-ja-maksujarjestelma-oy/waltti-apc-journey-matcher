@@ -1,17 +1,28 @@
+# Both automatic and manual queue commands must satisfy these same conditions.
+# Single-PR queues preserve head-bound policy and approval checks.
 queue_rules:
   - name: dependabot
-    merge_conditions:
-      - "#approved-reviews-by>=1"
+    queue_conditions: &eligibility
+      - author=dependabot[bot]
+      - base=main
+      - -draft
+      - -conflict
+      - -closed
+      - -label~=(?i)^(help wanted|help-wanted|hold)$
+      - "#changes-requested-reviews-by=0"
+      - check-success=@github-actions/Dependency policy Dependabot
+      - or:
+          - check-success=@github-actions/Dependency policy AUTO
+          - approved-reviews-by=pnupu
+      - check-success=@github-actions/Dependency policy
       - check-success=Build, check, test, push
       - check-success=CodeQL
-    batch_size: 10
-    batch_max_wait_time: 5min
+    merge_conditions: *eligibility
+    batch_size: 1
     merge_method: fast-forward
 pull_request_rules:
-  - name: Merge Dependabot PRs automatically within repository constraints
-    conditions:
-      - author=dependabot[bot]
-      - "#approved-reviews-by>=1"
+  - name: Queue eligible dependency updates
+    conditions: *eligibility
     actions:
       queue:
         name: dependabot
