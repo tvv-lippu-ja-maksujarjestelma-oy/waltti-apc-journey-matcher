@@ -48,7 +48,7 @@
     "globals": "^17.13.0",
     "jest": "^30.5.2",
     "jest-util": "^30.5.1",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.1",
     "protobufjs-cli": "^2.7.1",
     "quicktype": "^25.1.0",
     "ts-jest": "^29.4.15",
